@@ -48,12 +48,18 @@ enum VaultKey {
         let key = SymmetricKey(size: .bits256)
         let keyData = key.withUnsafeBytes { Data($0) }
 
+        #if targetEnvironment(simulator)
+        let accessibility = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        #else
+        let accessibility = kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+        #endif
+
         let attributes: [CFString: Any] = [
             kSecClass:                   kSecClassGenericPassword,
             kSecAttrService:             service,
             kSecAttrAccount:             account,
             kSecValueData:               keyData,
-            kSecAttrAccessible:          kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+            kSecAttrAccessible:          accessibility
         ]
 
         let status = SecItemAdd(attributes as CFDictionary, nil)

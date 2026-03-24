@@ -29,7 +29,7 @@ struct DocArmorApp: App {
 
         // Provision vault key on first launch
         if !VaultKey.exists {
-            try? VaultKey.generate()
+            _ = try? VaultKey.generate()
         }
 
         let auth = AuthService()

@@ -18,7 +18,7 @@ enum EncryptionService {
     ///   - plaintext: Raw JPEG data to encrypt
     ///   - key: AES-256 SymmetricKey from VaultKey.load()
     /// - Returns: Tuple of (ciphertext+tag, nonce) to store in DocumentPage
-    static func encrypt(_ plaintext: Data, using key: SymmetricKey) throws -> (encryptedData: Data, nonce: Data) {
+    nonisolated static func encrypt(_ plaintext: Data, using key: SymmetricKey) throws -> (encryptedData: Data, nonce: Data) {
         let nonce = AES.GCM.Nonce()
         let sealedBox = try AES.GCM.seal(plaintext, using: key, nonce: nonce)
 
@@ -37,7 +37,7 @@ enum EncryptionService {
     ///   - nonce: Stored 12-byte nonce
     ///   - key: AES-256 SymmetricKey from VaultKey.load()
     /// - Returns: Original JPEG data
-    static func decrypt(encryptedData: Data, nonce nonceData: Data, using key: SymmetricKey) throws -> Data {
+    nonisolated static func decrypt(encryptedData: Data, nonce nonceData: Data, using key: SymmetricKey) throws -> Data {
         guard encryptedData.count > 16 else {
             throw EncryptionError.invalidCiphertext
         }

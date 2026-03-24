@@ -25,15 +25,24 @@ final class AuthService {
     // MARK: - Biometry
 
     func checkBiometryAvailability() {
+#if targetEnvironment(simulator)
+        biometryType = .none
+#else
         var error: NSError?
         context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
         biometryType = context.biometryType
+#endif
     }
 
     // MARK: - Authenticate
 
     func authenticate() async {
         guard state != .unlocked else { return }
+
+#if targetEnvironment(simulator)
+        authError = nil
+        state = .unlocked
+#else
         state = .authenticating
         authError = nil
 
@@ -67,6 +76,7 @@ final class AuthService {
             state = .locked
             authError = error.localizedDescription
         }
+#endif
     }
 
     // MARK: - Lock

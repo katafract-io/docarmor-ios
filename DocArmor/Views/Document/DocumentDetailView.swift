@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct DocumentDetailView: View {
     let document: Document

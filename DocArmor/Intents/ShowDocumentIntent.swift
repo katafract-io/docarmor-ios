@@ -86,6 +86,6 @@ struct DocumentCategoryQuery: EntityQuery {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let showDocumentIntent = Notification.Name("docarmor.intent.showDocument")
-    static let openCategoryIntent = Notification.Name("docarmor.intent.openCategory")
+    nonisolated static let showDocumentIntent = Notification.Name("docarmor.intent.showDocument")
+    nonisolated static let openCategoryIntent = Notification.Name("docarmor.intent.openCategory")
 }

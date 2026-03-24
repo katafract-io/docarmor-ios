@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import LocalAuthentication
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -16,11 +17,12 @@ struct SettingsView: View {
             Form {
                 // MARK: Security
                 Section("Security") {
-                    Picker("Auto-Lock", selection: Bindable(autoLock).selectedTimeout) {
+                    Picker("Auto-Lock", selection: autoLockTimeoutBinding) {
                         ForEach(AutoLockService.Timeout.allCases) { timeout in
                             Text(timeout.displayName).tag(timeout)
                         }
                     }
+                    .pickerStyle(.menu)
 
                     HStack {
                         Label("Biometrics", systemImage: biometryIcon)
@@ -116,7 +118,7 @@ struct SettingsView: View {
         try? VaultKey.delete()
 
         // Generate a fresh key for any future use
-        try? VaultKey.generate()
+        _ = try? VaultKey.generate()
 
         auth.lock()
         isResetting = false
@@ -130,6 +132,13 @@ struct SettingsView: View {
         case .touchID: return "touchid"
         default:       return "lock.fill"
         }
+    }
+
+    private var autoLockTimeoutBinding: Binding<AutoLockService.Timeout> {
+        Binding(
+            get: { autoLock.selectedTimeout },
+            set: { autoLock.selectedTimeout = $0 }
+        )
     }
 
     private var biometryName: String {
