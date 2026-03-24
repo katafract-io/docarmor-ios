@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSFaceIDUsageDescription</key>
+    <string>DocArmor uses Face ID to protect your documents.</string>
+    <key>NSSiriUsageDescription</key>
+    <string>DocArmor uses Siri to let you quickly access your documents by voice.</string>
+    <key>NSUserActivityTypes</key>
+    <array>
+        <string>ShowDocumentIntent</string>
+        <string>OpenCategoryIntent</string>
+    </array>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>docarmor</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.katafract.docarmor</string>
+        </dict>
+    </array>
+</dict>
+</plist>

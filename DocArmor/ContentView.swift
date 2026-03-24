@@ -1,20 +1,33 @@
 import SwiftUI
 
+/// Root auth-gate router. Switches between the lock screen and the main vault
+/// based on `AuthService.state`. Also wires auto-lock activity tracking.
 struct ContentView: View {
+    @Environment(AuthService.self) private var auth
+    @Environment(AutoLockService.self) private var autoLock
+
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "app.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(.tint)
-            Text("DocArmor: Document Scanner")
-                .font(.title2.bold())
-            Text("Coming soon from Katafract.")
-                .foregroundStyle(.secondary)
+        Group {
+            switch auth.state {
+            case .locked, .authenticating:
+                LockScreenView()
+                    .transition(.opacity)
+            case .unlocked:
+                HomeView()
+                    .transition(.opacity)
+            }
         }
-        .padding()
+        .animation(.easeInOut(duration: 0.25), value: auth.state == .unlocked)
+        // Track user taps anywhere in the unlocked app for auto-lock idle timer
+        .simultaneousGesture(
+            TapGesture().onEnded { autoLock.recordActivity() },
+            including: .all
+        )
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AuthService())
+        .environment(AutoLockService(authService: AuthService()))
 }
