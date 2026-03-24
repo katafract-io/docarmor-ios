@@ -14,7 +14,15 @@ struct PresentModeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentIndex: Int
     @State private var showingDismissConfirm = false
-    @State private var previousBrightness: CGFloat = UIScreen.main.brightness
+    @State private var previousBrightness: CGFloat = 0.5
+
+    /// Returns the screen associated with the app's first active window scene.
+    /// Avoids the deprecated `UIScreen.main` on iOS 26+.
+    private var activeScreen: UIScreen? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?.screen
+    }
 
     init(images: [UIImage], initialIndex: Int = 0, documentName: String) {
         self.images = images
@@ -56,12 +64,14 @@ struct PresentModeView: View {
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
         .onAppear {
-            previousBrightness = UIScreen.main.brightness
-            UIScreen.main.brightness = 1.0
+            if let screen = activeScreen {
+                previousBrightness = screen.brightness
+                screen.brightness = 1.0
+            }
             forceOrientation(.landscapeRight)
         }
         .onDisappear {
-            UIScreen.main.brightness = previousBrightness
+            activeScreen?.brightness = previousBrightness
             forceOrientation(.portrait)
         }
         .confirmationDialog("Exit Present Mode?", isPresented: $showingDismissConfirm, titleVisibility: .visible) {

@@ -59,7 +59,7 @@ final class AutoLockService {
         monitorTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(10))
-                await self?.checkIdleTimeout()
+                self?.checkIdleTimeout()
             }
         }
     }
