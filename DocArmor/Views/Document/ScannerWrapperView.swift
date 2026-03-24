@@ -2,10 +2,13 @@ import SwiftUI
 import VisionKit
 
 /// Wraps `VNDocumentCameraViewController` for use in SwiftUI.
-/// Calls `onCompletion` with an array of scanned `UIImage` pages.
+/// Calls `onCompletion` with an array of scanned `UIImage` pages,
+/// `onCancel` when the user dismisses, or `onError` with the underlying error
+/// (e.g. camera permission denied) so the caller can show feedback.
 struct ScannerWrapperView: UIViewControllerRepresentable {
     let onCompletion: ([UIImage]) -> Void
     let onCancel: () -> Void
+    let onError: (Error) -> Void
 
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
         let controller = VNDocumentCameraViewController()
@@ -16,16 +19,20 @@ struct ScannerWrapperView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: VNDocumentCameraViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onCompletion: onCompletion, onCancel: onCancel)
+        Coordinator(onCompletion: onCompletion, onCancel: onCancel, onError: onError)
     }
 
     final class Coordinator: NSObject, VNDocumentCameraViewControllerDelegate {
         let onCompletion: ([UIImage]) -> Void
         let onCancel: () -> Void
+        let onError: (Error) -> Void
 
-        init(onCompletion: @escaping ([UIImage]) -> Void, onCancel: @escaping () -> Void) {
+        init(onCompletion: @escaping ([UIImage]) -> Void,
+             onCancel: @escaping () -> Void,
+             onError: @escaping (Error) -> Void) {
             self.onCompletion = onCompletion
             self.onCancel = onCancel
+            self.onError = onError
         }
 
         func documentCameraViewController(
@@ -47,7 +54,9 @@ struct ScannerWrapperView: UIViewControllerRepresentable {
             _ controller: VNDocumentCameraViewController,
             didFailWithError error: Error
         ) {
-            onCancel()
+            // Surface the error rather than silently dismissing.
+            // Common cause: camera permission denied — caller shows actionable message.
+            onError(error)
         }
     }
 }

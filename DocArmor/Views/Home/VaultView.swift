@@ -61,7 +61,10 @@ struct VaultView: View {
             }
             .onChange(of: pendingDocumentType.wrappedValue) { _, type in
                 guard let type else { return }
-                // Navigate to first matching document for deep-link
+                // VaultView is only in the hierarchy when auth.state == .unlocked,
+                // so this onChange fires only after the user has authenticated.
+                // Do NOT clear the pending value on the lock screen path — the
+                // DocArmorApp.onOpenURL handler sets it; we consume it here.
                 if let doc = allDocuments.first(where: { $0.documentType == type }) {
                     navigationPath.append(doc)
                 }
@@ -69,7 +72,6 @@ struct VaultView: View {
             }
             .onChange(of: pendingCategory.wrappedValue) { _, category in
                 guard let category else { return }
-                // Navigate to the first document in the requested category (Siri intent)
                 if let doc = allDocuments.first(where: { $0.category == category }) {
                     navigationPath.append(doc)
                 }
@@ -226,21 +228,23 @@ struct ExpirationBadge: View {
     }
 
     private var label: String {
-        if isExpired { return "Expired" }
-        if daysUntilExpiry <= 30 { return "\(daysUntilExpiry)d" }
-        return ""
+        if isExpired          { return "Expired" }
+        if daysUntilExpiry <= 30  { return "\(daysUntilExpiry)d" }
+        if daysUntilExpiry <= 365 { return "Valid" }
+        return "Valid"
     }
 
     var body: some View {
-        if isExpired || daysUntilExpiry <= 30 {
-            Text(label)
-                .font(.caption2.bold())
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(badgeColor.opacity(0.15))
-                .foregroundStyle(badgeColor)
-                .clipShape(Capsule())
-        }
+        // Always show a badge when there is an expiration date — green for valid,
+        // orange for ≤30 days, red for expired. Hiding it for 31-365 days left
+        // users with no visual confirmation their document was still current.
+        Text(label)
+            .font(.caption2.bold())
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(badgeColor.opacity(0.15))
+            .foregroundStyle(badgeColor)
+            .clipShape(Capsule())
     }
 }
 

@@ -85,8 +85,20 @@ enum VaultKey {
     }
 
     /// Returns `true` if a vault key exists in the Keychain (app has been set up before).
+    ///
+    /// Uses an attribute-only query (`kSecReturnData: false`) so key bytes are never
+    /// materialized in memory just to answer a boolean question.
     static var exists: Bool {
-        (try? load()) != nil
+        let query: [CFString: Any] = [
+            kSecClass:           kSecClassGenericPassword,
+            kSecAttrService:     service,
+            kSecAttrAccount:     account,
+            kSecReturnData:      false,
+            kSecReturnAttributes: true,
+            kSecMatchLimit:      kSecMatchLimitOne
+        ]
+        var result: AnyObject?
+        return SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess
     }
 }
 

@@ -32,6 +32,13 @@ final class AutoLockService {
     var selectedTimeout: Timeout {
         didSet {
             UserDefaults.standard.set(selectedTimeout.rawValue, forKey: Self.timeoutKey)
+            // If the user switches from "Never" to any real timeout, start monitoring
+            // immediately — don't wait for the next scene-phase transition.
+            if oldValue == .never && selectedTimeout != .never {
+                startMonitoring()
+            } else if selectedTimeout == .never {
+                stopMonitoring()
+            }
         }
     }
 

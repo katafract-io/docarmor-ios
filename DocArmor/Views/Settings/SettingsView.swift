@@ -181,7 +181,7 @@ struct PrivacyPolicyView: View {
 
                     policySection(
                         title: "Local Encryption",
-                        body: "All documents are encrypted using AES-256-GCM before being written to storage. The encryption key is stored in your device's Secure Enclave-backed Keychain and never leaves your device."
+                        body: "All documents are encrypted using AES-256-GCM before being written to storage. The encryption key is stored in the iOS Keychain with the 'accessible only when device passcode is set, this device only' protection class — it never leaves your device and is automatically deleted if you remove your device passcode."
                     )
 
                     policySection(

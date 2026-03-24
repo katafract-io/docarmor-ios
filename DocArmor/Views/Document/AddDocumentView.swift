@@ -27,6 +27,7 @@ struct AddDocumentView: View {
     @State private var showingPhotoPicker = false
     @State private var isSaving = false
     @State private var saveError: String?
+    @State private var scannerError: String?
 
     private var isEditing: Bool { editingDocument != nil }
 
@@ -163,9 +164,21 @@ struct AddDocumentView: View {
                         updatePageLabels()
                         showingScanner = false
                     },
-                    onCancel: { showingScanner = false }
+                    onCancel: { showingScanner = false },
+                    onError: { error in
+                        showingScanner = false
+                        scannerError = error.localizedDescription
+                    }
                 )
                 .ignoresSafeArea()
+            }
+            .alert("Camera Unavailable", isPresented: .init(
+                get: { scannerError != nil },
+                set: { if !$0 { scannerError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(scannerError ?? "The document scanner could not start. Check that camera access is allowed in Settings.")
             }
             .sheet(isPresented: $showingPhotoPicker) {
                 PhotoPickerView(

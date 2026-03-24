@@ -30,9 +30,18 @@ struct DocArmorApp: App {
             fatalError("Failed to create SwiftData container: \(error)")
         }
 
-        // Provision vault key on first launch
+        // Provision vault key on first launch.
+        // `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` requires the device
+        // to have a passcode. If it doesn't, generate() throws and we surface a
+        // flag so the UI can explain the situation instead of failing silently later.
         if !VaultKey.exists {
-            _ = try? VaultKey.generate()
+            do {
+                try VaultKey.generate()
+            } catch {
+                // VaultKey.noPasscode is checked by LockScreenView to show
+                // an actionable "Set a device passcode to use DocArmor" message.
+                UserDefaults.standard.set(true, forKey: "vaultKeyProvisioningFailed")
+            }
         }
 
         // Create a single AuthService and hand the same reference to AutoLockService.

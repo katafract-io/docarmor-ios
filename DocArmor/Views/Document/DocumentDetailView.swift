@@ -15,6 +15,7 @@ struct DocumentDetailView: View {
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
     @State private var showingShareSheet = false
+    @State private var showingShareWarning = false   // pre-share privacy confirmation
     @State private var shareItems: [Any] = []
 
     var body: some View {
@@ -103,6 +104,16 @@ struct DocumentDetailView: View {
         .sheet(isPresented: $showingShareSheet) {
             ActivityViewController(activityItems: shareItems)
         }
+        // Privacy gate before sharing — exporting leaves the encrypted vault
+        .alert("Export Unencrypted Image?", isPresented: $showingShareWarning) {
+            Button("Export Anyway", role: .destructive) {
+                shareItems = [decryptedImages[currentPageIndex]]
+                showingShareSheet = true
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Sharing will export a plain, unencrypted image outside DocArmor. Only share with people or apps you trust.")
+        }
         .alert("Delete Document?", isPresented: $showingDeleteAlert) {
             Button("Delete", role: .destructive) { deleteDocument() }
             Button("Cancel", role: .cancel) {}
@@ -157,23 +168,31 @@ struct DocumentDetailView: View {
         decryptError = nil
 
         do {
-            let key = try VaultKey.load()
+            let key   = try VaultKey.load()
             let pages = document.sortedPages
 
-            var images: [UIImage] = []
-            for page in pages {
-                let jpegData = try await Task.detached(priority: .userInitiated) {
-                    try EncryptionService.decrypt(
-                        encryptedData: page.encryptedImageData,
-                        nonce: page.nonce,
-                        using: key
-                    )
-                }.value
-                if let image = UIImage(data: jpegData) {
-                    images.append(image)
+            // Decrypt all pages concurrently so a 10-page document takes
+            // max(individual decrypt time) rather than sum(all decrypt times).
+            var ordered = [Int: UIImage](minimumCapacity: pages.count)
+            try await withThrowingTaskGroup(of: (Int, UIImage?).self) { group in
+                for (idx, page) in pages.enumerated() {
+                    let encData = page.encryptedImageData
+                    let nonce   = page.nonce
+                    group.addTask(priority: .userInitiated) {
+                        let jpeg = try EncryptionService.decrypt(
+                            encryptedData: encData,
+                            nonce: nonce,
+                            using: key
+                        )
+                        return (idx, UIImage(data: jpeg))
+                    }
+                }
+                for try await (idx, image) in group {
+                    ordered[idx] = image
                 }
             }
-            decryptedImages = images
+            // Restore page order from the index map
+            decryptedImages = (0..<pages.count).compactMap { ordered[$0] }
         } catch {
             decryptError = "Could not decrypt document: \(error.localizedDescription)"
         }
@@ -185,8 +204,9 @@ struct DocumentDetailView: View {
 
     private func shareCurrentPage() {
         guard currentPageIndex < decryptedImages.count else { return }
-        shareItems = [decryptedImages[currentPageIndex]]
-        showingShareSheet = true
+        // Show a privacy warning before handing the decrypted image to the
+        // system share sheet, where it could be sent outside the encrypted vault.
+        showingShareWarning = true
     }
 
     // MARK: - Delete
