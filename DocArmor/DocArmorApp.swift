@@ -10,8 +10,9 @@ struct DocArmorApp: App {
     @State private var authService: AuthService
     @State private var autoLockService: AutoLockService
 
-    // Deep-link state for Siri / widget → open a specific document type
+    // Deep-link state for Siri / widget → open a specific document type or category
     @State private var pendingDocumentType: DocumentType?
+    @State private var pendingCategory: DocumentCategory?
 
     private let modelContainer: ModelContainer
 
@@ -48,6 +49,7 @@ struct DocArmorApp: App {
                 .environment(authService)
                 .environment(autoLockService)
                 .environment(\.pendingDocumentType, $pendingDocumentType)
+                .environment(\.pendingCategory, $pendingCategory)
                 .onChange(of: scenePhase) { _, newPhase in
                     switch newPhase {
                     case .background:
@@ -69,6 +71,13 @@ struct DocArmorApp: App {
                     else { return }
                     pendingDocumentType = docType
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .openCategoryIntent)) { notification in
+                    guard
+                        let categoryValue = notification.userInfo?["category"] as? String,
+                        let category = DocumentCategory(rawValue: categoryValue)
+                    else { return }
+                    pendingCategory = category
+                }
         }
         .modelContainer(modelContainer)
     }
@@ -88,15 +97,24 @@ struct DocArmorApp: App {
     }
 }
 
-// MARK: - Environment Key for deep-link state
+// MARK: - Environment Keys for deep-link state
 
 private struct PendingDocumentTypeKey: EnvironmentKey {
     static let defaultValue: Binding<DocumentType?> = .constant(nil)
+}
+
+private struct PendingCategoryKey: EnvironmentKey {
+    static let defaultValue: Binding<DocumentCategory?> = .constant(nil)
 }
 
 extension EnvironmentValues {
     var pendingDocumentType: Binding<DocumentType?> {
         get { self[PendingDocumentTypeKey.self] }
         set { self[PendingDocumentTypeKey.self] = newValue }
+    }
+
+    var pendingCategory: Binding<DocumentCategory?> {
+        get { self[PendingCategoryKey.self] }
+        set { self[PendingCategoryKey.self] = newValue }
     }
 }

@@ -10,6 +10,7 @@ struct VaultView: View {
     @State private var navigationPath = NavigationPath()
 
     var pendingDocumentType: Binding<DocumentType?>
+    var pendingCategory: Binding<DocumentCategory?>
 
     // MARK: - Computed
 
@@ -65,6 +66,14 @@ struct VaultView: View {
                     navigationPath.append(doc)
                 }
                 pendingDocumentType.wrappedValue = nil
+            }
+            .onChange(of: pendingCategory.wrappedValue) { _, category in
+                guard let category else { return }
+                // Navigate to the first document in the requested category (Siri intent)
+                if let doc = allDocuments.first(where: { $0.category == category }) {
+                    navigationPath.append(doc)
+                }
+                pendingCategory.wrappedValue = nil
             }
         }
     }
@@ -236,6 +245,6 @@ struct ExpirationBadge: View {
 }
 
 #Preview {
-    VaultView(pendingDocumentType: .constant(nil))
+    VaultView(pendingDocumentType: .constant(nil), pendingCategory: .constant(nil))
         .modelContainer(for: [Document.self, DocumentPage.self], inMemory: true)
 }

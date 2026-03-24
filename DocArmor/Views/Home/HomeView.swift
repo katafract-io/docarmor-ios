@@ -3,11 +3,12 @@ import SwiftData
 
 struct HomeView: View {
     @Environment(\.pendingDocumentType) private var pendingDocumentType
+    @Environment(\.pendingCategory) private var pendingCategory
     @State private var selectedTab = 0
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            VaultView(pendingDocumentType: pendingDocumentType)
+            VaultView(pendingDocumentType: pendingDocumentType, pendingCategory: pendingCategory)
                 .tabItem {
                     Label("Vault", systemImage: "lock.shield.fill")
                 }

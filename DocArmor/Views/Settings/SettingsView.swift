@@ -114,6 +114,12 @@ struct SettingsView: View {
             modelContext.delete(doc)
         }
 
+        // Explicitly save before touching the Keychain. SwiftData batches deletes
+        // and may not flush until the next auto-save window; if the app crashes
+        // after VaultKey.delete() but before the context saves, stale encrypted
+        // records remain — now undecryptable with the new key.
+        try? modelContext.save()
+
         // Delete vault encryption key — encrypted data is now unrecoverable garbage
         try? VaultKey.delete()
 

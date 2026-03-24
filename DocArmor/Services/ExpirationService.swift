@@ -34,7 +34,11 @@ enum ExpirationService {
 
         let content = UNMutableNotificationContent()
         content.title = "Document Expiring Soon"
-        content.body = "\(document.name) expires in \(reminderDays) days."
+        // Use the actual expiration date in the body rather than the reminder lead
+        // time. The device may deliver the notification late (e.g. after DND/reboot),
+        // so a concrete date is more accurate than "in X days".
+        let formatted = expirationDate.formatted(date: .abbreviated, time: .omitted)
+        content.body = "\(document.name) expires on \(formatted). Tap to view."
         content.sound = .default
 
         let components = Calendar.current.dateComponents(

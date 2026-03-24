@@ -264,12 +264,13 @@ struct AddDocumentView: View {
                 ExpirationService.scheduleReminder(for: document)
             }
 
+            // Reset flag before dismiss so re-presentation doesn't flash "Saving…"
+            isSaving = false
             dismiss()
         } catch {
             saveError = "Failed to save: \(error.localizedDescription)"
+            isSaving = false
         }
-
-        isSaving = false
     }
 }
 

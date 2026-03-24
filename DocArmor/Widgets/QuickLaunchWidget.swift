@@ -39,12 +39,16 @@ struct QuickLaunchProvider: AppIntentTimelineProvider {
     }
 
     private func makeEntry(for type: DocumentType) -> QuickLaunchEntry {
-        let urlString = "docarmor://open?type=\(type.rawValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        let encoded = type.rawValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "docarmor://open?type=\(encoded)"
+        // Fall back to the bare app URL rather than force-unwrapping; a future
+        // DocumentType raw value could theoretically produce an invalid URL string.
+        let deepLink = URL(string: urlString) ?? URL(string: "docarmor://open")!
         return QuickLaunchEntry(
             date: .now,
             documentTypeName: type.rawValue,
             documentTypeIcon: type.systemImage,
-            deepLinkURL: URL(string: urlString)!
+            deepLinkURL: deepLink
         )
     }
 }
