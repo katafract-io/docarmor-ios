@@ -1,1 +1,5 @@
 .claude/
+LOCAL_AGENT_RULES.md
+.DS_Store
+DocArmor.xcodeproj/xcuserdata/
+DocArmor.xcodeproj/project.xcworkspace/xcuserdata/
