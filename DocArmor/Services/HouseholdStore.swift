@@ -65,10 +65,14 @@ enum HouseholdStore {
         if let data = UserDefaults.standard.data(forKey: profilesKey),
            let decoded = try? JSONDecoder().decode([HouseholdMemberProfile].self, from: data) {
             let sanitized = sanitizeProfiles(decoded)
-            saveProfiles(sanitized)
+            // Only write back if sanitization changed something (one-time migration, not every read)
+            if sanitized != decoded {
+                saveProfiles(sanitized)
+            }
             return sanitized
         }
 
+        // Legacy migration — only runs once when profilesKey doesn't exist yet
         let migrated = sanitizeProfiles(
             loadLegacyMembers().map { HouseholdMemberProfile(name: $0, role: defaultRole(for: $0)) }
         )
