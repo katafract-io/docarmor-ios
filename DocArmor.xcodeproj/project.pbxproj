@@ -11,10 +11,6 @@
 		BC3811842F7397AC00CE6623 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC3811832F7397AC00CE6623 /* SwiftUI.framework */; };
 		BC3811912F7397AE00CE6623 /* DocArmorWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BC38117F2F7397AC00CE6623 /* DocArmorWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D0C0A1012F90000100C0FFEE /* DocArmorShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D0C0A1002F90000100C0FFEE /* DocArmorShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		D103A8D9AB1C4A1090BAC661 /* EntitlementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C7E190362840C99CE43A25 /* EntitlementService.swift */; };
-		D9698402730F49B7ABA9ACF6 /* ProductID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 470CD547808D4E78969BDDD5 /* ProductID.swift */; };
-		82F2C40296D9428C9553524F /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51FE14F3E63A45C0BE27FA17 /* PaywallView.swift */; };
-		D642302BE2D44B3AB31DDF88 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2970969CAAC84B5F8611EB32 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -278,7 +274,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D642302BE2D44B3AB31DDF88 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -303,9 +298,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D103A8D9AB1C4A1090BAC661 /* EntitlementService.swift in Sources */,
-				D9698402730F49B7ABA9ACF6 /* ProductID.swift in Sources */,
-				82F2C40296D9428C9553524F /* PaywallView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -441,6 +433,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DocArmorWidgetExtension/Info.plist;
@@ -471,6 +464,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DocArmorWidgetExtension/Info.plist;
@@ -498,6 +492,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DocArmorShareExtension/Info.plist;
@@ -526,6 +521,7 @@
 			buildSettings = {
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DocArmorShareExtension/Info.plist;
