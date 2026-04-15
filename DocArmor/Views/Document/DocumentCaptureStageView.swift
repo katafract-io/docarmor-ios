@@ -59,6 +59,7 @@ struct DocumentCaptureStageView: View {
                 onCompletion: { images in
                     if capturedImages.isEmpty {
                         capturedImages = images
+                        cropImageIndex = 0
                     } else {
                         capturedImages.append(contentsOf: images)
                     }
@@ -77,6 +78,7 @@ struct DocumentCaptureStageView: View {
                 onCompletion: { images in
                     if capturedImages.isEmpty {
                         capturedImages = images
+                        cropImageIndex = 0
                     } else {
                         capturedImages.append(contentsOf: images)
                     }
@@ -258,12 +260,13 @@ struct DocumentCaptureStageView: View {
                             Button {
                                 cropImageIndex = i
                             } label: {
-                                Image(systemName: "crop")
-                                    .font(.caption2.bold())
-                                    .padding(5)
-                                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 5))
+                                Label("Adjust", systemImage: "crop")
+                                    .font(.caption2.weight(.semibold))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 5)
+                                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 6))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.bordered)
                             .padding(6)
                         }
                     }
@@ -393,6 +396,7 @@ struct DocumentCaptureStageView: View {
             let result = try DocumentImportNormalizationService.normalize(urls: urls)
             if capturedImages.isEmpty {
                 capturedImages = result.images
+                cropImageIndex = 0
             } else {
                 capturedImages.append(contentsOf: result.images)
             }
