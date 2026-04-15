@@ -49,7 +49,7 @@ struct TravelModeView: View {
                     VStack(spacing: 24) {
                         Image(systemName: "lock.circle.fill")
                             .font(.system(size: 64))
-                            .foregroundStyle(.amber)
+                            .foregroundStyle(.orange)
 
                         VStack(spacing: 8) {
                             Text("Travel Mode is Pro")
@@ -66,7 +66,7 @@ struct TravelModeView: View {
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .padding(12)
-                                .background(Color.amber)
+                                .background(Color.orange)
                                 .cornerRadius(8)
                         }
 

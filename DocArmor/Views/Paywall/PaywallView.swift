@@ -49,7 +49,7 @@ struct PaywallView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "shield.fill")
                         .font(.system(size: 48))
-                        .foregroundStyle(.amber)
+                        .foregroundStyle(.orange)
 
                     VStack(spacing: 8) {
                         Text(reason.title)
@@ -94,13 +94,13 @@ struct PaywallView: View {
                                         HStack {
                                             Text(showProAnnual ? "Hide annual option" : "Show annual option (save 17%)")
                                                 .font(.caption.weight(.semibold))
-                                                .foregroundStyle(.amber)
+                                                .foregroundStyle(.orange)
                                             Spacer()
                                             Image(systemName: showProAnnual ? "chevron.up" : "chevron.down")
-                                                .foregroundStyle(.amber)
+                                                .foregroundStyle(.orange)
                                         }
                                         .padding(12)
-                                        .background(Color.amber.opacity(0.1))
+                                        .background(Color.orange.opacity(0.1))
                                         .cornerRadius(8)
                                     }
                                 }
@@ -139,13 +139,13 @@ struct PaywallView: View {
                                         HStack {
                                             Text(showFamilyAnnual ? "Hide annual option" : "Show annual option (save 17%)")
                                                 .font(.caption.weight(.semibold))
-                                                .foregroundStyle(.amber)
+                                                .foregroundStyle(.orange)
                                             Spacer()
                                             Image(systemName: showFamilyAnnual ? "chevron.up" : "chevron.down")
-                                                .foregroundStyle(.amber)
+                                                .foregroundStyle(.orange)
                                         }
                                         .padding(12)
-                                        .background(Color.amber.opacity(0.1))
+                                        .background(Color.orange.opacity(0.1))
                                         .cornerRadius(8)
                                     }
                                 }
@@ -170,7 +170,7 @@ struct PaywallView: View {
                                 .padding(12)
                         }
                     }
-                    .background(Color.amber)
+                    .background(Color.orange)
                     .cornerRadius(8)
                     .disabled(entitlementService.isLoading || selectedProductID == nil)
 
@@ -228,7 +228,7 @@ struct PaywallView: View {
         savingsPercentage: Int = 0,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        Button { action() } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -238,10 +238,10 @@ struct PaywallView: View {
                         if isSavings {
                             Text("Save \(savingsPercentage)%")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(.amber)
+                                .foregroundStyle(.orange)
                                 .padding(.vertical, 4)
                                 .padding(.horizontal, 8)
-                                .background(Color.amber.opacity(0.2))
+                                .background(Color.orange.opacity(0.2))
                                 .cornerRadius(4)
                         }
                     }
@@ -255,21 +255,21 @@ struct PaywallView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(product.displayPrice)
                         .font(.headline)
-                    Text(product.subscription?.localizedSubscriptionPeriod ?? "")
+                    Text(product.id.contains("monthly") ? "per month" : "per year")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(isSelected ? .amber : .secondary)
+                    .foregroundStyle(isSelected ? .orange : .secondary)
             }
             .padding(12)
-            .background(isSelected ? Color.amber.opacity(0.1) : Color(.secondarySystemGroupedBackground))
+            .background(isSelected ? Color.orange.opacity(0.1) : Color(.secondarySystemGroupedBackground))
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.amber : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.orange : Color.clear, lineWidth: 2)
             )
         }
     }
@@ -282,7 +282,7 @@ struct PaywallView: View {
         savingsPercentage: Int = 0,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        Button { action() } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -297,10 +297,10 @@ struct PaywallView: View {
                         if isSavings {
                             Text("Save \(savingsPercentage)%")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(.amber)
+                                .foregroundStyle(.orange)
                                 .padding(.vertical, 4)
                                 .padding(.horizontal, 8)
-                                .background(Color.amber.opacity(0.2))
+                                .background(Color.orange.opacity(0.2))
                                 .cornerRadius(4)
                         }
                     }
@@ -311,21 +311,21 @@ struct PaywallView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(product.displayPrice)
                         .font(.headline)
-                    Text(product.subscription?.localizedSubscriptionPeriod ?? "")
+                    Text(product.id.contains("monthly") ? "per month" : "per year")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(isSelected ? .amber : .secondary)
+                    .foregroundStyle(isSelected ? .orange : .secondary)
             }
             .padding(12)
-            .background(isSelected ? Color.amber.opacity(0.1) : Color(.secondarySystemGroupedBackground))
+            .background(isSelected ? Color.orange.opacity(0.1) : Color(.secondarySystemGroupedBackground))
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.amber : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.orange : Color.clear, lineWidth: 2)
             )
         }
     }
