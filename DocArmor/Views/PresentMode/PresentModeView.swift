@@ -12,8 +12,10 @@ struct PresentModeView: View {
     let documentName: String
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(EntitlementService.self) private var entitlementService
     @State private var currentIndex: Int
     @State private var showingDismissConfirm = false
+    @State private var showingPaywall = false
     @State private var previousBrightness: CGFloat = 0.5
 
     /// Returns the screen associated with the app's first active window scene.
@@ -35,17 +37,31 @@ struct PresentModeView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            TabView(selection: $currentIndex) {
-                ForEach(images.indices, id: \.self) { i in
-                    Image(uiImage: images[i])
-                        .resizable()
-                        .scaledToFit()
-                        .padding(16)
-                        .tag(i)
+            VStack {
+                TabView(selection: $currentIndex) {
+                    ForEach(images.indices, id: \.self) { i in
+                        Image(uiImage: images[i])
+                            .resizable()
+                            .scaledToFit()
+                            .padding(16)
+                            .tag(i)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: images.count > 1 ? .always : .never))
+                .ignoresSafeArea()
+
+                // Free-use banner (if applicable)
+                if entitlementService.currentPlan == .free && entitlementService.presentModeUsesRemaining > 0 {
+                    VStack {
+                        Text("\(entitlementService.presentModeUsesRemaining) free uses remaining")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(12)
+                    .background(Color.orange.opacity(0.7))
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: images.count > 1 ? .always : .never))
-            .ignoresSafeArea()
 
             // Dismiss button (top trailing)
             VStack {
@@ -64,6 +80,13 @@ struct PresentModeView: View {
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
         .onAppear {
+            // Check entitlement before activating present mode
+            if !entitlementService.canUsePresentMode {
+                showingPaywall = true
+                return
+            }
+            entitlementService.recordPresentModeUse()
+
             if let screen = activeScreen {
                 previousBrightness = screen.brightness
                 screen.brightness = 1.0
@@ -79,6 +102,13 @@ struct PresentModeView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("The document will no longer be displayed.")
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView(
+                reason: .presentMode,
+                entitlementService: entitlementService,
+                dismiss: { showingPaywall = false }
+            )
         }
     }
 

@@ -9,6 +9,7 @@ struct DocArmorApp: App {
     // They are initialised once in init() and stored as @State to survive re-renders.
     @State private var authService: AuthService
     @State private var autoLockService: AutoLockService
+    @State private var entitlementService: EntitlementService
 
     // Deep-link state for Siri / widget → open a specific document type or category
     @State private var pendingDocumentType: DocumentType?
@@ -50,6 +51,10 @@ struct DocArmorApp: App {
         let auth = AuthService()
         _authService    = State(initialValue: auth)
         _autoLockService = State(initialValue: AutoLockService(authService: auth))
+
+        // Initialize EntitlementService for StoreKit 2 monetization
+        _entitlementService = State(initialValue: EntitlementService())
+
         excludeVaultFromBackup()
     }
 
@@ -58,6 +63,7 @@ struct DocArmorApp: App {
             ContentView()
                 .environment(authService)
                 .environment(autoLockService)
+                .environment(entitlementService)
                 .environment(\.pendingDocumentType, $pendingDocumentType)
                 .environment(\.pendingCategory, $pendingCategory)
                 .onChange(of: scenePhase) { _, newPhase in
@@ -87,6 +93,10 @@ struct DocArmorApp: App {
                         let category = DocumentCategory(rawValue: categoryValue)
                     else { return }
                     pendingCategory = category
+                }
+                .task {
+                    entitlementService.startListening()
+                    await entitlementService.refreshEntitlements()
                 }
         }
         .modelContainer(modelContainer)

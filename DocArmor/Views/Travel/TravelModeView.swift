@@ -3,12 +3,14 @@ import SwiftData
 
 struct TravelModeView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(EntitlementService.self) private var entitlementService
     @Query(sort: \Document.name) private var allDocuments: [Document]
 
     @State private var navigationPath = NavigationPath()
     @State private var showingQuickPresent = false
     @State private var quickPresentImages: [UIImage] = []
     @State private var quickPresentDocumentName = ""
+    @State private var showingPaywall = false
 
     private let travelTypes: Set<DocumentType> = [
         .passport, .driversLicense, .stateID, .globalEntry,
@@ -42,7 +44,36 @@ struct TravelModeView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             Group {
-                if travelDocuments.isEmpty {
+                if !entitlementService.canUseTravelMode {
+                    // Locked state for non-Pro users
+                    VStack(spacing: 24) {
+                        Image(systemName: "lock.circle.fill")
+                            .font(.system(size: 64))
+                            .foregroundStyle(.amber)
+
+                        VStack(spacing: 8) {
+                            Text("Travel Mode is Pro")
+                                .font(.headline)
+                            Text("Organize all your travel documents in one dedicated space.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+
+                        Button(action: { showingPaywall = true }) {
+                            Text("Upgrade Now")
+                                .frame(maxWidth: .infinity)
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .padding(12)
+                                .background(Color.amber)
+                                .cornerRadius(8)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(24)
+                } else if travelDocuments.isEmpty {
                     ContentUnavailableView(
                         "No Travel Documents",
                         systemImage: "airplane",
@@ -145,6 +176,13 @@ struct TravelModeView: View {
                 PresentModeView(
                     images: quickPresentImages,
                     documentName: quickPresentDocumentName
+                )
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView(
+                    reason: .travelMode,
+                    entitlementService: entitlementService,
+                    dismiss: { showingPaywall = false }
                 )
             }
         }
