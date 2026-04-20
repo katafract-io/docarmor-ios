@@ -553,6 +553,15 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Not a Legal Substitute", systemImage: "exclamationmark.triangle")
+                            .font(.caption.bold())
+                        Text("DocArmor stores organized, encrypted photos of your documents. It is not a legal substitute for the original — you still need your physical passport, license, or ID to cross a border, board a flight, or satisfy official identification.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
                 }
             }
             .scrollDismissesKeyboard(.immediately)
