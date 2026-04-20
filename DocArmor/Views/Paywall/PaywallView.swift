@@ -55,12 +55,7 @@ struct PaywallView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(red: 0.06, green: 0.12, blue: 0.26), Color(red: 0.02, green: 0.03, blue: 0.06)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Color.kataBackgroundGradient.ignoresSafeArea()
 
             VStack(spacing: 24) {
                 Spacer()
@@ -70,7 +65,7 @@ struct PaywallView: View {
                     Image(systemName: reason.isSovereignOnly ? "icloud.and.arrow.up.fill" : "lock.shield.fill")
                         .font(.system(size: 52, weight: .semibold))
                         .symbolRenderingMode(.palette)
-                        .foregroundStyle(Color.yellow.opacity(0.9), Color.white.opacity(0.9))
+                        .foregroundStyle(Color.kataChampagne.opacity(0.9), Color.white.opacity(0.9))
 
                     Text(reason.headline)
                         .font(.title.bold())
@@ -163,7 +158,7 @@ struct PaywallView: View {
             } label: {
                 HStack(spacing: 8) {
                     if entitlementService.isLoading {
-                        ProgressView().tint(Color(red: 0.06, green: 0.12, blue: 0.26))
+                        ProgressView().tint(Color.kataNavy)
                     } else {
                         Image(systemName: "lock.open.fill")
                         Text("Unlock for \(entitlementService.unlockProduct?.displayPrice ?? "$12.99")")
@@ -172,7 +167,7 @@ struct PaywallView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .foregroundStyle(Color(red: 0.06, green: 0.12, blue: 0.26))
+                .foregroundStyle(Color.kataNavy)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
             }
             .disabled(entitlementService.isLoading)
@@ -194,9 +189,9 @@ struct PaywallView: View {
                             .foregroundStyle(.white)
                         Text("BONUS")
                             .font(.caption2.weight(.bold))
-                            .foregroundStyle(Color(red: 0.06, green: 0.12, blue: 0.26))
+                            .foregroundStyle(Color.kataNavy)
                             .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Color.yellow.opacity(0.95), in: Capsule())
+                            .background(Color.kataChampagne, in: Capsule())
                     }
                     Text("$14.99/mo or $119.99/yr · bundled with Vaultyx")
                         .font(.caption)
@@ -222,11 +217,8 @@ struct PaywallView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .foregroundStyle(Color(red: 0.06, green: 0.12, blue: 0.26))
-                .background(
-                    LinearGradient(colors: [Color.yellow.opacity(0.95), Color.orange.opacity(0.9)], startPoint: .leading, endPoint: .trailing),
-                    in: RoundedRectangle(cornerRadius: 12)
-                )
+                .foregroundStyle(Color.kataNavy)
+                .background(Color.kataPremiumGradient, in: RoundedRectangle(cornerRadius: 12))
             }
 
             if !reason.isSovereignOnly {
@@ -246,11 +238,11 @@ struct PaywallView: View {
         }
         .padding(16)
         .background(
-            LinearGradient(colors: [Color.yellow.opacity(0.16), Color.orange.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing),
+            LinearGradient(colors: [Color.kataGold.opacity(0.16), Color.kataBronze.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing),
             in: RoundedRectangle(cornerRadius: 16)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(0.35), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16).stroke(Color.kataGold.opacity(0.45), lineWidth: 1)
         )
     }
 
@@ -261,7 +253,7 @@ struct PaywallView: View {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "checkmark")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(Color.yellow.opacity(0.95))
+                        .foregroundStyle(Color.kataChampagne.opacity(0.95))
                     Text(item)
                         .font(.subheadline)
                         .foregroundStyle(Color.white.opacity(0.88))
