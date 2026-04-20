@@ -513,6 +513,12 @@ struct SettingsView: View {
 
                 Section("Support & Legal") {
                     externalLinkRow(
+                        title: "Send Feedback",
+                        systemImage: "envelope.fill",
+                        urlString: "mailto:feedback@katafract.com?subject=DocArmor%20feedback"
+                    )
+
+                    externalLinkRow(
                         title: "App Page",
                         systemImage: "app.badge",
                         urlString: "https://katafract.com/apps/docarmor"
