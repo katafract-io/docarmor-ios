@@ -1,5 +1,8 @@
+// MARK: - EmptyStateView imported for empty states
 import SwiftUI
+import KatafractStyle
 import SwiftData
+// DocArmorHaptic for branded feedback
 
 /// Shown when the user taps "Needs Attention" (or similar) on the home screen.
 /// Presents one row per (document, reason) pair so the user sees WHICH document
@@ -50,10 +53,10 @@ struct ReadinessReviewSheet: View {
         NavigationStack {
             Group {
                 if rows.isEmpty {
-                    ContentUnavailableView(
-                        "Everything looks ready",
-                        systemImage: "checkmark.seal.fill",
-                        description: Text("No documents currently need your attention.")
+                    DocArmorEmptyState(
+                        title: "Everything looks ready",
+                        description: "No documents currently need your attention.",
+                        systemImage: "checkmark.seal.fill"
                     )
                 } else {
                     List {
@@ -102,7 +105,7 @@ struct ReadinessReviewSheet: View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.title2)
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.kataChampagne.opacity(0.8))
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(uniqueDocs) document\(uniqueDocs == 1 ? "" : "s") need attention")
                     .font(.subheadline.weight(.semibold))
@@ -120,8 +123,7 @@ struct ReadinessReviewSheet: View {
         document.lastVerifiedAt = .now
         document.updatedAt = .now
         try? modelContext.save()
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
+        DocArmorHaptic.documentVerified()
     }
 }
 
@@ -189,7 +191,7 @@ private struct ReadinessRow: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
-            .tint(.orange)
+            .tint(.kataChampagne)
 
         case .expired, .expiringSoon:
             Button(action: onOpenEditor) {

@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 import KatafractStyle
+// DocArmorHaptic for branded feedback
 
 struct AddDocumentView: View {
     private enum SaveMode {
@@ -198,10 +199,10 @@ struct AddDocumentView: View {
                             ForEach(scanWarnings, id: \.self) { warning in
                                 Label(warning, systemImage: "exclamationmark.triangle.fill")
                                     .font(.caption)
-                                    .foregroundStyle(.orange)
+                                    .foregroundStyle(Color.kataChampagne.opacity(0.8))
                             }
                         }
-                        .listRowBackground(Color.orange.opacity(0.06))
+                        .listRowBackground(Color.kataChampagne.opacity(0.06))
                     }
                 }
 
@@ -536,7 +537,7 @@ struct AddDocumentView: View {
                         ForEach(scanWarnings, id: \.self) { warning in
                             Label(warning, systemImage: "exclamationmark.triangle.fill")
                                 .font(.caption)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.kataChampagne.opacity(0.8))
                         }
                     }
                 }
@@ -545,7 +546,7 @@ struct AddDocumentView: View {
                 if let error = saveError {
                     Section {
                         Text(error)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.kataChampagne.opacity(0.85))
                             .font(.caption)
                     }
                 }
@@ -1148,6 +1149,7 @@ struct AddDocumentView: View {
             }
             try modelContext.save()
             isSaving = false
+            DocArmorHaptic.documentSaved()
             dismiss()
         } catch {
             saveError = "Failed to save: \(error.localizedDescription)"

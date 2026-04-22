@@ -503,10 +503,10 @@ struct VaultView: View {
                 if allDocuments.isEmpty {
                     emptyStateView
                 } else if filteredDocuments.isEmpty {
-                    ContentUnavailableView(
-                        "No Matching Documents",
-                        systemImage: "line.3.horizontal.decrease.circle",
-                        description: Text("Try a different search, type filter, or person filter.")
+                    DocArmorEmptyState(
+                        title: "No Matching Documents",
+                        description: "Try a different search, type filter, or person filter.",
+                        systemImage: "line.3.horizontal.decrease.circle"
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -773,7 +773,7 @@ struct VaultView: View {
                     ForEach(preparednessChecklist) { item in
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: item.systemImage)
-                                .foregroundStyle(item.isReady ? .green : .orange)
+                                .foregroundStyle(item.isReady ? .green : .kataChampagne)
                                 .frame(width: 22)
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -783,7 +783,7 @@ struct VaultView: View {
                                     Spacer()
                                     Text(item.statusText)
                                         .font(.caption.weight(.semibold))
-                                        .foregroundStyle(item.isReady ? .green : .orange)
+                                        .foregroundStyle(item.isReady ? .green : .kataChampagne)
                                 }
 
                                 Text(item.caption)
