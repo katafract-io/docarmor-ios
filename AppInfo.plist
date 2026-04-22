@@ -2,40 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>4</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSFaceIDUsageDescription</key>
-	<string>DocArmor uses Face ID to protect your documents.</string>
-	<key>NSSiriUsageDescription</key>
-	<string>DocArmor uses Siri to let you quickly access your documents by voice.</string>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>ShowDocumentIntent</string>
-		<string>OpenCategoryIntent</string>
-	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>docarmor</string>
-			</array>
-			<key>CFBundleURLName</key>
-			<string>com.katafract.docarmor</string>
-		</dict>
-	</array>
 	<key>CFBundleDisplayName</key>
 	<string>DocArmor: Document Scanner</string>
 	<key>CFBundleDocumentTypes</key>
@@ -51,38 +17,57 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.katafract.docarmor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>docarmor</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>4</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>DocArmor uses your camera to scan documents.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>DocArmor uses Face ID to protect your documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>DocArmor can import documents from your photo library.</string>
+	<key>NSSiriUsageDescription</key>
+	<string>DocArmor uses Siri to let you quickly access your documents by voice.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>ShowDocumentIntent</string>
+		<string>OpenCategoryIntent</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>com.katafract.docarmor.backup</string>
-			<key>UTTypeDescription</key>
-			<string>DocArmor Encrypted Backup</string>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>docarmorbackup</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
 	<key>UILaunchScreen</key>
-	<dict/>
+	<dict>
+		<key>UIColorName</key>
+		<string>AccentColor</string>
+		<key>UIImageName</key>
+		<string>LaunchDocSymbol</string>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -95,6 +80,26 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>DocArmor Encrypted Backup</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.katafract.docarmor.backup</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>docarmorbackup</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 </dict>
 </plist>
