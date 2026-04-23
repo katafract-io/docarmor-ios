@@ -73,6 +73,8 @@ struct DocArmorApp: App {
                         autoLockService.stopMonitoring()
                     case .active:
                         autoLockService.startMonitoring()
+                        // Check if user just purchased Sovereign in Vaultyx
+                        entitlementService.checkForSovereignUpdate()
                     default:
                         break
                     }

@@ -7,14 +7,17 @@ final class EntitlementService {
     // Current entitlement level
     enum Plan: Int, Comparable {
         case free = 0
-        case pro = 1
-        case family = 2
+        case unlocked = 1  // Paid DocArmor $12.99 unlock
+        case sovereign = 2 // Sovereign tier (Vaultyx) — full unlock + cloud backup
         static func < (lhs: Plan, rhs: Plan) -> Bool { lhs.rawValue < rhs.rawValue }
     }
 
     private(set) var currentPlan: Plan = .free
     private(set) var isLoading: Bool = false
     private(set) var products: [Product] = []
+
+    // Track whether we've checked the shared App Group for Sovereign entitlement
+    private var hasCheckedSharedGroup = false
 
     // Present Mode free-use counter (3 free uses)
     var presentModeUsesRemaining: Int {
@@ -30,13 +33,14 @@ final class EntitlementService {
     }
 
     var canUsePresentMode: Bool {
-        currentPlan >= .pro || presentModeUsesRemaining > 0
+        currentPlan >= .unlocked || presentModeUsesRemaining > 0
     }
-    var canUseTravelMode: Bool { currentPlan >= .pro }
-    var smartPackLimit: Int { currentPlan >= .pro ? Int.max : 1 }
-    var canUseCustomPacks: Bool { currentPlan >= .pro }
-    var canManageHousehold: Bool { currentPlan >= .pro }
-    var hasFamilyVault: Bool { currentPlan >= .family }
+    var canUseTravelMode: Bool { currentPlan >= .unlocked }
+    var smartPackLimit: Int { currentPlan >= .unlocked ? Int.max : 1 }
+    var canUseCustomPacks: Bool { currentPlan >= .unlocked }
+    var canManageHousehold: Bool { currentPlan >= .unlocked }
+    var hasFamilyVault: Bool { currentPlan >= .unlocked }
+    var canUseCloudBackup: Bool { currentPlan >= .sovereign }  // Sovereign-only feature
 
     // MARK: - Product Loading
 
@@ -113,6 +117,7 @@ final class EntitlementService {
 
         var highestPlan: Plan = .free
 
+        // Check for own StoreKit purchases
         for await result in Transaction.currentEntitlements {
             switch result {
             case .verified(let transaction):
@@ -126,9 +131,34 @@ final class EntitlementService {
             }
         }
 
+        // Check shared App Group for Sovereign tier from Vaultyx
+        if let sovereignPlan = checkSharedAppGroupEntitlement(), sovereignPlan > highestPlan {
+            highestPlan = sovereignPlan
+        }
+
         // Also check Apple Family Sharing (if any family member has an entitlement, grant it)
         // StoreKit 2 automatically includes family-shared subscriptions in currentEntitlements
         currentPlan = highestPlan
+    }
+
+    // MARK: - Shared App Group Check
+
+    /// Reads Sovereign entitlement from the shared App Group `group.com.katafract.enclave`.
+    /// This is written by Vaultyx after a successful Sovereign purchase.
+    private func checkSharedAppGroupEntitlement() -> Plan? {
+        guard let defaults = UserDefaults(suiteName: "group.com.katafract.enclave") else {
+            return nil
+        }
+
+        let token = defaults.string(forKey: "enclave.sigil.token") ?? ""
+        let plan  = (defaults.string(forKey: "enclave.sigil.plan") ?? "").lowercased()
+
+        // If token is present and plan is sovereign (or sovereign_annual), grant .sovereign
+        if !token.isEmpty && (plan.contains("sovereign")) {
+            return .sovereign
+        }
+
+        return nil
     }
 
     // MARK: - Transaction Listening
@@ -157,6 +187,14 @@ final class EntitlementService {
         let plan = ProductID.plan(for: transaction.productID)
         if plan > currentPlan {
             currentPlan = plan
+        }
+    }
+
+    /// Called on app foreground or periodically to re-check Sovereign status.
+    /// Useful if the user just purchased Sovereign in Vaultyx and returned to DocArmor.
+    func checkForSovereignUpdate() {
+        if let sovereignPlan = checkSharedAppGroupEntitlement(), sovereignPlan > currentPlan {
+            currentPlan = sovereignPlan
         }
     }
 }
