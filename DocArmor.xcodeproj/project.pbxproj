@@ -721,7 +721,7 @@
 			};
 			name = Debug;
 		};
-		F1A2B3C4D5E6F009A2B3C4D5 /* Debug */ = {
+		F1A2B3C4D5E6F011A2B3C4D5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -801,7 +801,7 @@
 		F1A2B3C4D5E6F009A2B3C4D5 /* Build configuration list for PBXNativeTarget "DocArmorUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F1A2B3C4D5E6F009A2B3C4D5 /* Debug */,
+				F1A2B3C4D5E6F011A2B3C4D5 /* Debug */,
 				F1A2B3C4D5E6F00FA2B3C4D5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
