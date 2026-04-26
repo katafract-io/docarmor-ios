@@ -10,8 +10,17 @@ struct DocumentDetailView: View {
 
     @State private var decryptedImages: [UIImage] = []
     @State private var currentPageIndex = 0
-    @State private var isLoading = true
+    @State private var isLoading: Bool
     @State private var decryptError: String?
+
+    init(document: Document) {
+        self.document = document
+        // Only enter loading state if there are pages to decrypt.
+        // Documents with no pages show the empty placeholder immediately
+        // without the spinner flash that caused first-tap blank appearance.
+        _isLoading = State(initialValue: !document.pages.isEmpty)
+    }
+
     @State private var showingPresentMode = false
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
