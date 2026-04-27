@@ -269,6 +269,7 @@ struct DocumentDetailView: View {
     private func decryptPages() async {
         isLoading = true
         decryptError = nil
+        currentPageIndex = 0
 
         do {
             let key   = try VaultKey.load()
