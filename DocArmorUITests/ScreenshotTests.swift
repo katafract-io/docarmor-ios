@@ -21,7 +21,7 @@ final class ScreenshotTests: XCTestCase {
         scanButton.tap()
 
         sleep(1)
-        snapshot("01_HeroScanner_iPhone17ProMax")
+        SnapshotHelper.snapshot("01_HeroScanner_iPhone17ProMax")
     }
 
     /// Screenshot 2: Vault list — 4-5 synthetic documents
@@ -31,7 +31,7 @@ final class ScreenshotTests: XCTestCase {
         vaultTab.tap()
 
         sleep(1)
-        snapshot("02_VaultList_iPhone17ProMax")
+        SnapshotHelper.snapshot("02_VaultList_iPhone17ProMax")
     }
 
     /// Screenshot 3: Document detail — OCR text + image + encryption shield
@@ -45,7 +45,7 @@ final class ScreenshotTests: XCTestCase {
         firstDocButton.tap()
 
         sleep(1)
-        snapshot("03_DocumentDetail_iPhone17ProMax")
+        SnapshotHelper.snapshot("03_DocumentDetail_iPhone17ProMax")
     }
 
     /// Screenshot 4: Paywall v2 — $12.99 unlock OR Sovereign state
@@ -59,9 +59,9 @@ final class ScreenshotTests: XCTestCase {
         if paywallButton.exists {
             paywallButton.tap()
             sleep(1)
-            snapshot("04_PaywallV2_iPhone17ProMax")
+            SnapshotHelper.snapshot("04_PaywallV2_iPhone17ProMax")
         } else {
-            snapshot("04_PaywallV2_Sovereign_iPhone17ProMax")
+            SnapshotHelper.snapshot("04_PaywallV2_Sovereign_iPhone17ProMax")
         }
     }
 
@@ -71,7 +71,7 @@ final class ScreenshotTests: XCTestCase {
         settingsTab.tap()
 
         sleep(1)
-        snapshot("05_Settings_iPhone17ProMax")
+        SnapshotHelper.snapshot("05_Settings_iPhone17ProMax")
     }
 
     /// Screenshot 6: Widget glance — recent scan
@@ -80,7 +80,7 @@ final class ScreenshotTests: XCTestCase {
         if widgetButton.exists {
             widgetButton.tap()
             sleep(1)
-            snapshot("06_WidgetPreview_iPhone17ProMax")
+            SnapshotHelper.snapshot("06_WidgetPreview_iPhone17ProMax")
         }
     }
 }
@@ -107,7 +107,7 @@ final class ScreenshotTests_iPad: XCTestCase {
         vaultTab.tap()
 
         sleep(1)
-        snapshot("01_VaultList_iPad13ProM5")
+        SnapshotHelper.snapshot("01_VaultList_iPad13ProM5")
     }
 
     func test_iPad_02_DocumentDetail() throws {
@@ -120,7 +120,7 @@ final class ScreenshotTests_iPad: XCTestCase {
         firstDocButton.tap()
 
         sleep(1)
-        snapshot("02_DocumentDetail_iPad13ProM5")
+        SnapshotHelper.snapshot("02_DocumentDetail_iPad13ProM5")
     }
 
     func test_iPad_03_Settings() throws {
@@ -128,17 +128,7 @@ final class ScreenshotTests_iPad: XCTestCase {
         settingsTab.tap()
 
         sleep(1)
-        snapshot("03_Settings_iPad13ProM5")
+        SnapshotHelper.snapshot("03_Settings_iPad13ProM5")
     }
 }
 
-// MARK: - Snapshot Helper
-
-func snapshot(_ name: String) {
-    // Fastlane snapshot integration point — will be called by fastlane's snapshot() function
-    // For local testing, this is a no-op; CI workflow uses FASTLANE_SNAPSHOT=1
-    if ProcessInfo.processInfo.environment["FASTLANE_SNAPSHOT"] == "1" {
-        // Fastlane will intercept this function call
-        XCUIApplication().snapshot(name)
-    }
-}
