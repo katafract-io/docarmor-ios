@@ -123,6 +123,7 @@ struct DocumentDetailView: View {
                 .padding(20)
             }
         }
+        .background(Color(.systemBackground))
         .navigationTitle(document.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -269,6 +270,7 @@ struct DocumentDetailView: View {
     private func decryptPages() async {
         isLoading = true
         decryptError = nil
+        currentPageIndex = 0
 
         do {
             let key   = try VaultKey.load()
