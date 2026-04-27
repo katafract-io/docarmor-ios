@@ -1299,12 +1299,15 @@ struct VaultView: View {
             }
 
             if !recentlyAddedDocuments.isEmpty {
-                Section("Recently Added") {
+                Section {
                     ForEach(recentlyAddedDocuments) { doc in
                         DocumentRow(document: doc)
                             .contentShape(Rectangle())
                             .onTapGesture { navigationPath.append(doc) }
                     }
+                } header: {
+                    Label("Recently Added", systemImage: "clock.fill")
+                        .foregroundStyle(Color.kataIce)
                 }
             }
 
@@ -2283,7 +2286,7 @@ struct ExpirationBadge: View {
 
     /// Urgent = expired/expiring → kataChampagne (warm amber warning); healthy → kataGold faded.
     private var labelColor: Color {
-        isExpired || daysUntilExpiry <= 30 ? Color.kataGold : Color.kataGold.opacity(0.5)
+        isExpired || daysUntilExpiry <= 30 ? Color.kataChampagne : Color.kataGold.opacity(0.5)
     }
 
     var body: some View {
