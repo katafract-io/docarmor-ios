@@ -785,7 +785,7 @@ struct VaultView: View {
     private func preparednessRow(_ item: PreparednessChecklistItem) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: item.systemImage)
-                .foregroundStyle(item.isReady ? Color.green : Color.kataChampagne)
+                .foregroundStyle(item.isReady ? Color.green : Color.kataGold)
                 .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -795,7 +795,7 @@ struct VaultView: View {
                     Spacer()
                     Text(item.statusText)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(item.isReady ? Color.green : Color.kataChampagne)
+                        .foregroundStyle(item.isReady ? Color.green : Color.kataGold)
                 }
 
                 Text(item.caption)
@@ -805,7 +805,7 @@ struct VaultView: View {
                 if !item.gapPreview.isEmpty {
                     Text(item.gapPreview)
                         .font(.caption2)
-                        .foregroundStyle(Color.kataChampagne)
+                        .foregroundStyle(Color.kataGold)
                         .lineLimit(2)
                 }
             }
@@ -2222,11 +2222,11 @@ struct DocumentRow: View {
                 if document.isMissingRequiredPages {
                     Label("Missing page", systemImage: "doc.badge.plus")
                         .font(.kataCaption(11))
-                        .foregroundStyle(Color.kataChampagne.opacity(0.8))
+                        .foregroundStyle(Color.kataGold.opacity(0.8))
                 } else if document.needsVerificationReview {
                     Label("Review recommended", systemImage: "checkmark.seal.trianglebadge.exclamationmark")
                         .font(.kataCaption(11))
-                        .foregroundStyle(Color.kataChampagne.opacity(0.8))
+                        .foregroundStyle(Color.kataGold.opacity(0.8))
                 }
             }
 
@@ -2250,7 +2250,7 @@ struct DocumentRow: View {
         .overlay(
             Group {
                 if document.needsAttention {
-                    RoundedRectangle(cornerRadius: 4).stroke(Color.kataChampagne.opacity(0.6), lineWidth: 0.5)
+                    RoundedRectangle(cornerRadius: 4).stroke(Color.kataGold.opacity(0.6), lineWidth: 0.5)
                 }
             }
         )
@@ -2283,7 +2283,7 @@ struct ExpirationBadge: View {
 
     /// Urgent = expired/expiring → kataChampagne (warm amber warning); healthy → kataGold faded.
     private var labelColor: Color {
-        isExpired || daysUntilExpiry <= 30 ? Color.kataChampagne : Color.kataGold.opacity(0.5)
+        isExpired || daysUntilExpiry <= 30 ? Color.kataGold : Color.kataGold.opacity(0.5)
     }
 
     var body: some View {
