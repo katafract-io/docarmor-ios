@@ -2321,7 +2321,7 @@ private struct RenewalWorkflowSheet: View {
             case "Handle Soon":
                 return !doc.isExpired && doc.daysUntilExpiry <= 30 && doc.daysUntilExpiry > 0
             case "Finish Setup":
-                return doc.isIncomplete
+                return doc.isMissingRequiredPages
             case "Verify":
                 return doc.requiresReview
             default:
