@@ -3,11 +3,11 @@
 project("./DocArmor.xcodeproj")
 
 devices([
-  "iPhone 17 Pro Max",
-  "iPad Pro 13-inch (M5)"
+  "iPhone 16 Pro Max",
+  "iPad Pro 13-inch"
 ])
 
-ios_version("26.4")
+ios_version("18")
 
 languages(["en-US"])
 
