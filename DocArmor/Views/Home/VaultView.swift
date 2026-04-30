@@ -2319,7 +2319,8 @@ private struct RenewalWorkflowSheet: View {
             case "Renew Now":
                 return doc.isExpired
             case "Handle Soon":
-                return !doc.isExpired && doc.daysUntilExpiry <= 30 && doc.daysUntilExpiry > 0
+                if let days = doc.daysUntilExpiry { return !doc.isExpired && days <= 30 && days > 0 }
+                return false
             case "Finish Setup":
                 return doc.isIncomplete
             case "Verify":
