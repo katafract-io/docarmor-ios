@@ -78,7 +78,14 @@ struct PresentModeView: View {
                 previousBrightness = screen.brightness
                 screen.brightness = 1.0
             }
-            forceOrientation(.landscapeRight)
+            // Defer the rotation by one runloop turn so the SwiftUI hosting view
+            // gets to render its first frame in portrait before iOS animates the
+            // rotation. Without this, the underlying UIHostingView blanks (black)
+            // for the duration of the rotation animation on first present — second
+            // present is fine because device is already landscape.
+            DispatchQueue.main.async {
+                forceOrientation(.landscapeRight)
+            }
         }
         .onDisappear {
             activeScreen?.brightness = previousBrightness
