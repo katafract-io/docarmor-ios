@@ -3,10 +3,16 @@ import SwiftData
 import CryptoKit
 
 /// ScreenshotMode provides seed data for fastlane snapshot captures.
-/// Activated via launch argument: -ScreenshotMode seedData
+/// Activated via either launch convention:
+///   - Legacy: -ScreenshotMode seedData (single-dash, two args — ScreenshotUITestsBase)
+///   - Current: --screenshots (double-dash, single arg — ScreenshotTests + ScreenshotLaunchArgs)
 public class ScreenshotMode {
-    static let isEnabled = CommandLine.arguments.contains("-ScreenshotMode") &&
-                          CommandLine.arguments.contains("seedData")
+    static let isEnabled: Bool = {
+        let args = CommandLine.arguments
+        let legacy = args.contains("-ScreenshotMode") && args.contains("seedData")
+        let current = args.contains("--screenshots")
+        return legacy || current
+    }()
 
     static func seedDocuments() -> [Document] {
         let variant = ScreenshotLaunchArgs.seedDataVariant ?? "full-vault"

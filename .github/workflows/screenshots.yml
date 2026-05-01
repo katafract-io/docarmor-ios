@@ -110,7 +110,13 @@ jobs:
           export PATH="${RBENV_RUBY}/bin:$PATH"
           rm -rf fastlane/screenshots
           ${RBENV_RUBY}/bin/bundle exec fastlane ${FASTLANE_LANE} 2>&1 | tee /tmp/fastlane.log | tail -80
-          echo "shot_count=$(find fastlane/screenshots -name '*.png' 2>/dev/null | wc -l | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          SHOTS=$(find fastlane/screenshots -name '*.png' 2>/dev/null | wc -l | tr -d ' ')
+          echo "shot_count=${SHOTS}" >> "$GITHUB_OUTPUT"
+          # Fastfile assert_screenshots_present! is the primary guard.
+          # Defense in depth: hard-fail workflow if 0 PNGs slipped through.
+          if [ "${SHOTS:-0}" -lt 1 ]; then
+            echo "::error::capture_ios_screenshots produced 0 PNGs — see artifact"; exit 1
+          fi
 
       - name: Collect artifacts
         if: always()
