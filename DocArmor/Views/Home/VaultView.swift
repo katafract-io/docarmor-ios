@@ -559,6 +559,7 @@ struct VaultView: View {
         NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
                 if !allDocuments.isEmpty {
+                    statsBanner
                     filterBar
                 }
 
@@ -693,6 +694,55 @@ struct VaultView: View {
 
     // MARK: - Document List
 
+    // MARK: - Stats Banner
+
+    private var statsCount: Int {
+        allDocuments.count
+    }
+
+    private var householdMemberCount: Int {
+        var names = Set(allDocuments.compactMap(\.ownerDisplayName))
+        // Count "Shared" as one of the members if any document is shared (ownerName == nil)
+        if allDocuments.contains(where: { HouseholdStore.normalize($0.ownerName) == nil }) {
+            names.insert("Shared")
+        }
+        return names.count
+    }
+
+    private var statsBanner: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(statsCount) documents")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.primary)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(householdMemberCount) household members")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.primary)
+                }
+
+                Divider()
+
+                HStack(spacing: 4) {
+                    Image(systemName: "lock.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.green)
+                    Text("End-to-end encrypted")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.primary)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+        }
+        .background(Color(.systemGroupedBackground).opacity(0.6))
+    }
+
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
@@ -753,6 +803,7 @@ struct VaultView: View {
                         } label: {
                             Label(owner, systemImage: "person.fill")
                         }
+                        .accessibilityIdentifier("filter-\(owner.lowercased())")
                     }
                 } label: {
                     filterChip(
@@ -826,6 +877,7 @@ struct VaultView: View {
             selectedPreparednessItem = item
         }
         .padding(.vertical, 2)
+        .accessibilityIdentifier("preparedness-\(item.title.lowercased().replacingOccurrences(of: " ", with: "-"))")
     }
 
     private var documentList: some View {

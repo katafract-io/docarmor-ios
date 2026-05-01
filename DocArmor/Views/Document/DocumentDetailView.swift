@@ -134,6 +134,7 @@ struct DocumentDetailView: View {
                 }
                 .disabled(decryptedImages.isEmpty)
                 .accessibilityLabel("Present Mode")
+                .accessibilityIdentifier("show-now-button")
 
                 Menu {
                     Button(action: { showingEditSheet = true }) {

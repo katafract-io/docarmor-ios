@@ -8,6 +8,7 @@ import Foundation
 ///   --seed-data <variant>          Seed documents: "preparedness", "full-vault", "minimal"
 ///   --auto-open <document-type>    Auto-navigate to a specific document type (e.g., "driversLicense")
 ///   --mock-subscribed              Override EntitlementService to return Sovereign tier
+///   --mock-unsubscribed            Override EntitlementService to return locked (free) tier
 ///
 /// Usage:
 ///   if ScreenshotLaunchArgs.skipOnboarding {
@@ -45,5 +46,12 @@ enum ScreenshotLaunchArgs {
     /// If true, EntitlementService returns Sovereign tier status.
     static var mockSubscribed: Bool {
         launchArgs.contains("--mock-subscribed")
+    }
+
+    /// Whether --mock-unsubscribed was passed.
+    /// If true, EntitlementService returns locked (free) tier status.
+    /// Mutually exclusive with --mock-subscribed; --mock-subscribed wins if both are set.
+    static var mockUnsubscribed: Bool {
+        launchArgs.contains("--mock-unsubscribed")
     }
 }

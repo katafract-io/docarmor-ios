@@ -153,8 +153,10 @@ final class EntitlementService {
     func refreshEntitlements() async {
         var newPlan: Plan = .locked
 
-        // ScreenshotMode override: always Sovereign for fastlane snapshots
-        if ScreenshotMode.isEnabled {
+        // ScreenshotMode override: check for explicit --mock-unsubscribed or --mock-subscribed flags
+        if ScreenshotLaunchArgs.mockUnsubscribed {
+            newPlan = .locked
+        } else if ScreenshotLaunchArgs.mockSubscribed || ScreenshotMode.isEnabled {
             newPlan = .sovereign
         } else {
             // Check platform bundle-unlock first (Enclave/Sovereign token)

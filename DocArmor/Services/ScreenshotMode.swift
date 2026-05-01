@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import CryptoKit
 
 /// ScreenshotMode provides seed data for fastlane snapshot captures.
 /// Activated via launch argument: -ScreenshotMode seedData
@@ -73,14 +74,14 @@ public class ScreenshotMode {
                 identifierSuffix: "AC-987654",
                 ocrSuggestedIssuerName: "Acme Mutual",
                 ocrSuggestedIdentifier: "AC-987654",
-                ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 60 * 86400),
+                ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 12 * 86400),
                 ocrConfidenceScore: 0.93,
                 ocrExtractedAt: Date(timeIntervalSinceNow: -1800),
                 ocrStructureHintsRaw: ["policy_number", "expiration", "vehicle"],
                 lastVerifiedAt: Date(timeIntervalSinceNow: -604800),
-                renewalNotes: "Renew on 2026-06-01",
-                expirationDate: Date(timeIntervalSinceNow: 60 * 86400), // ~60 days, shows renewal warning
-                expirationReminderDays: [30, 14],
+                renewalNotes: "Auto-renew on the 30th — Acme Mutual policy AC-987654, $1,247 / 6 mo",
+                expirationDate: Date(timeIntervalSinceNow: 12 * 86400), // ~12 days, urgent visual reminder
+                expirationReminderDays: [14, 7, 3],
                 isFavorite: false
             ),
 
@@ -312,19 +313,63 @@ public class ScreenshotMode {
         ]
 
         // Branch on variant for different screenshot scenarios
-        switch variant {
+        let result: [Document] = switch variant {
         case "minimal":
             // Return only first 3 documents for minimal vault display
-            return Array(allDocuments.prefix(3))
+            Array(allDocuments.prefix(3))
         case "preparedness", "full-vault":
             // Return all 14 documents; "preparedness" needs the gaps to show
-            return allDocuments
+            allDocuments
         default:
-            return allDocuments
+            allDocuments
         }
+
+        // Populate encrypted pages for documents that need preview rendering
+        // (driversLicense + insuranceAuto for Frames 3-4)
+        for document in result {
+            if document.documentType == .driversLicense && document.pages.isEmpty {
+                attachMockPage(to: document, image: ScreenshotMockImageFactory.driverLicenseImage())
+            } else if document.documentType == .insuranceAuto && document.pages.isEmpty {
+                attachMockPage(to: document, image: ScreenshotMockImageFactory.autoInsuranceImage())
+            }
+        }
+
+        return result
     }
 
     static func makeSovereignEntitlementOverride() -> Bool {
         true
+    }
+
+    /// Attach an encrypted mock page to a document for screenshot rendering.
+    /// Generates a vault key if needed, encrypts the image, and creates a DocumentPage.
+    /// Screenshot-mode only — errors are logged but don't block document display.
+    private static func attachMockPage(to document: Document, image: UIImage) {
+        do {
+            // For screenshot mode, always use a mock key (not stored in keychain)
+            // This allows frames to decrypt and display the mock images.
+            let mockKeyData = Data(repeating: 0x42, count: 32)  // AES-256 = 32 bytes
+            let mockKey = SymmetricKey(data: mockKeyData)
+
+            guard let imageData = image.jpegData(compressionQuality: 0.85) else {
+                return
+            }
+
+            let nonce = AES.GCM.Nonce()
+            let sealedBox = try AES.GCM.seal(imageData, using: mockKey, nonce: nonce)
+
+            let encryptedData = sealedBox.ciphertext + sealedBox.tag
+            let page = DocumentPage(
+                id: UUID(),
+                pageIndex: 0,
+                encryptedImageData: encryptedData,
+                nonce: Data(nonce),
+                label: nil
+            )
+            document.pages.append(page)
+        } catch {
+            // Silent fail for screenshots — the document will render without preview
+            return
+        }
     }
 }
