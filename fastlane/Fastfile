@@ -13,30 +13,32 @@ default_platform(:ios)
 # (defined under `class << self`), so we monkey-patch via `class << TestCommandGenerator`.
 # Defining it as an instance method (without `class << self`) does nothing.
 require 'snapshot/test_command_generator'
-module Snapshot
-  class TestCommandGenerator < TestCommandGeneratorBase
-    class << self
-      def destination(devices)
-        devices = [devices] unless devices.is_a?(Array)
-        os = case devices.first.to_s
-             when /^Apple TV/ then 'tvOS'
-             when /^Apple Watch/ then 'watchOS'
-             else 'iOS'
-             end
-        os_version = Snapshot.config[:ios_version] || Snapshot::LatestOsVersion.version(os)
-        destinations = devices.map do |d|
-          device = find_device(d, os_version)
-          UI.user_error!("No device found named '#{d}' (os_version=#{os_version})") if device.nil?
-          UI.message("UDID-patched destination: #{device.name} (#{device.os_version}) udid=#{device.udid}")
-          # Use UDID instead of name+OS — bypasses runtime ambiguity when multiple
-          # builds of the same major.minor iOS runtime are installed.
-          "-destination 'platform=#{os} Simulator,id=#{device.udid}'"
-        end
-        [destinations.join(' ')]
+# Use root-namespace `::Snapshot` — inside Fastfile, bare `Snapshot` resolves
+# under `Fastlane::FastFile::` and would create a different (empty) constant.
+# Reopen the existing class without restating its parent (Ruby reopens cleanly).
+class ::Snapshot::TestCommandGenerator
+  class << self
+    def destination(devices)
+      devices = [devices] unless devices.is_a?(Array)
+      os = case devices.first.to_s
+           when /^Apple TV/ then 'tvOS'
+           when /^Apple Watch/ then 'watchOS'
+           else 'iOS'
+           end
+      os_version = ::Snapshot.config[:ios_version] || ::Snapshot::LatestOsVersion.version(os)
+      destinations = devices.map do |d|
+        device = find_device(d, os_version)
+        FastlaneCore::UI.user_error!("No device found named '#{d}' (os_version=#{os_version})") if device.nil?
+        FastlaneCore::UI.message("UDID-patched destination: #{device.name} (#{device.os_version}) udid=#{device.udid}")
+        # Use UDID instead of name+OS — bypasses runtime ambiguity when multiple
+        # builds of the same major.minor iOS runtime are installed.
+        "-destination 'platform=#{os} Simulator,id=#{device.udid}'"
       end
+      [destinations.join(' ')]
     end
   end
 end
+FastlaneCore::UI.message("[Fastfile] UDID-destination monkey-patch loaded for ::Snapshot::TestCommandGenerator")
 
 # Aborts the lane unless at least MIN_SHOTS PNG files exist under fastlane/screenshots/.
 # Prevents `deliver overwrite_screenshots:true` from blanking ASC when capture silently
