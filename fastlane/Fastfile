@@ -4,6 +4,46 @@
 
 default_platform(:ios)
 
+# Monkey-patch fastlane snapshot to identify simulators by UDID instead of name+OS.
+# Why: cmfmbp has two iOS 26.4 runtime builds installed (23E244 and 23E254a).
+# fastlane's `device.os_version` returns "26.4" (the runtime name, not the build),
+# so xcodebuild rejects `OS=26.4` as ambiguous. Using `id=<udid>` avoids the lookup.
+# Remove this patch when the duplicate runtime is uninstalled OR fastlane snapshot
+# starts emitting build-version-aware destinations.
+require 'snapshot/test_command_generator_base'
+module Snapshot
+  class TestCommandGeneratorBase
+    class << self
+      alias_method :__orig_destination, :destination if method_defined?(:destination) || respond_to?(:destination)
+    end
+  end
+end
+
+# Override the instance method that builds destination strings.
+require 'snapshot/test_command_generator'
+module Snapshot
+  class TestCommandGenerator
+    def destination(devices)
+      devices = [devices] unless devices.is_a?(Array)
+      os = case devices.first
+           when /^Apple TV/ then 'tvOS'
+           when /^Apple Watch/ then 'watchOS'
+           else 'iOS'
+           end
+      os_version = Snapshot.config[:ios_version] || Snapshot::LatestOsVersion.version(os)
+      destinations = devices.map do |d|
+        device = find_device(d, os_version)
+        UI.user_error!("No device found named '#{d}'") if device.nil?
+        UI.message("Using device #{device.name} (#{device.os_version}) udid=#{device.udid}")
+        # Use UDID instead of name+OS — bypasses runtime ambiguity when multiple
+        # builds of the same major.minor iOS runtime are installed.
+        "-destination 'platform=#{os} Simulator,id=#{device.udid}'"
+      end
+      [destinations.join(' ')]
+    end
+  end
+end
+
 # Aborts the lane unless at least MIN_SHOTS PNG files exist under fastlane/screenshots/.
 # Prevents `deliver overwrite_screenshots:true` from blanking ASC when capture silently
 # produced nothing (e.g. flag mismatch, broken accessibility identifier, scheme drift).
