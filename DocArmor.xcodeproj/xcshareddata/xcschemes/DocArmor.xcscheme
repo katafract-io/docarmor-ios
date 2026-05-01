@@ -56,7 +56,7 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F1A2B3C4D5E6F008A2B3C4D5"
+               BlueprintIdentifier = "A50D77F850C8E24BADA949AD"
                BuildableName = "DocArmorUITests.xctest"
                BlueprintName = "DocArmorUITests"
                ReferencedContainer = "container:DocArmor.xcodeproj">
@@ -75,7 +75,7 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F1A2B3C4D5E6F008A2B3C4D5"
+               BlueprintIdentifier = "A50D77F850C8E24BADA949AD"
                BuildableName = "DocArmorUITests.xctest"
                BlueprintName = "DocArmorUITests"
                ReferencedContainer = "container:DocArmor.xcodeproj">
