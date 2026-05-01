@@ -72,6 +72,13 @@ platform :ios do
     UI.success("Smoke pass: at least one PNG produced. Safe to run full submit_version_screenshots.")
   end
 
+  desc "Capture all device-class screenshots, no ASC delivery (sign-off path)"
+  lane :capture_version_screenshots do
+    capture_ios_screenshots
+    assert_screenshots_present!(min_shots: 6)
+    UI.success("Capture complete. PNGs in fastlane/screenshots/ — surface to workshop for sign-off, then resubmit_version_screenshots to deliver.")
+  end
+
   desc "Capture + upload App Store Version screenshots to ASC (no binary, no metadata)"
   lane :submit_version_screenshots do
     capture_ios_screenshots
