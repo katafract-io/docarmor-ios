@@ -3,10 +3,36 @@ import UIKit
 
 /// Full-screen document display for showing to airport agents, hotel staff, etc.
 /// - Max brightness
-/// - Landscape orientation forced
+/// - Landscape orientation forced (via `LandscapeOnlyContainer` — orientation
+///   is requested in UIKit `viewDidAppear`, after the first frame is painted,
+///   so the hosting view never blanks during the rotation animation.)
 /// - No navigation/tab chrome
 /// - Screenshot prevention disabled (user is intentionally showing the doc)
 struct PresentModeView: View {
+    let images: [UIImage]
+    let initialIndex: Int
+    let documentName: String
+
+    init(images: [UIImage], initialIndex: Int = 0, documentName: String) {
+        self.images = images
+        self.initialIndex = initialIndex
+        self.documentName = documentName
+    }
+
+    var body: some View {
+        LandscapeOnlyContainer {
+            PresentModeBody(
+                images: images,
+                initialIndex: initialIndex,
+                documentName: documentName
+            )
+        }
+        .ignoresSafeArea()
+        .background(.black)
+    }
+}
+
+private struct PresentModeBody: View {
     let images: [UIImage]
     let initialIndex: Int
     let documentName: String
@@ -26,7 +52,7 @@ struct PresentModeView: View {
             .first(where: { $0.activationState == .foregroundActive })?.screen
     }
 
-    init(images: [UIImage], initialIndex: Int = 0, documentName: String) {
+    init(images: [UIImage], initialIndex: Int, documentName: String) {
         self.images = images
         self.initialIndex = initialIndex
         self.documentName = documentName
@@ -49,7 +75,6 @@ struct PresentModeView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: images.count > 1 ? .always : .never))
                 .ignoresSafeArea()
-
             }
 
             // Dismiss button (top trailing)
@@ -69,7 +94,6 @@ struct PresentModeView: View {
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
         .onAppear {
-            // Premium gate: one-time unlock OR Sovereign bundle unlocks this.
             guard entitlementService.canUsePresentMode else {
                 showingPaywall = true
                 return
@@ -78,18 +102,9 @@ struct PresentModeView: View {
                 previousBrightness = screen.brightness
                 screen.brightness = 1.0
             }
-            // Defer the rotation by one runloop turn so the SwiftUI hosting view
-            // gets to render its first frame in portrait before iOS animates the
-            // rotation. Without this, the underlying UIHostingView blanks (black)
-            // for the duration of the rotation animation on first present — second
-            // present is fine because device is already landscape.
-            DispatchQueue.main.async {
-                forceOrientation(.landscapeRight)
-            }
         }
         .onDisappear {
             activeScreen?.brightness = previousBrightness
-            forceOrientation(.portrait)
         }
         .confirmationDialog("Exit Present Mode?", isPresented: $showingDismissConfirm, titleVisibility: .visible) {
             Button("Exit Present Mode", role: .destructive) { dismiss() }
@@ -104,14 +119,6 @@ struct PresentModeView: View {
                 dismiss: { showingPaywall = false }
             )
         }
-    }
-
-    // MARK: - Orientation
-
-    private func forceOrientation(_ orientation: UIInterfaceOrientation) {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
-        let mask: UIInterfaceOrientationMask = orientation == .landscapeRight ? .landscapeRight : .portrait
-        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: mask))
     }
 }
 
