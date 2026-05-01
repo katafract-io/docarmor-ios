@@ -13,12 +13,14 @@ struct HomeView: View {
                     Label("Vault", systemImage: "lock.shield.fill")
                 }
                 .tag(0)
+                .accessibilityIdentifier("vault-tab")
 
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
                 .tag(1)
+                .accessibilityIdentifier("settings-tab")
         }
         .tint(.accentColor)
     }

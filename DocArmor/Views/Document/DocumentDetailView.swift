@@ -134,6 +134,7 @@ struct DocumentDetailView: View {
                 }
                 .disabled(decryptedImages.isEmpty)
                 .accessibilityLabel("Present Mode")
+                .accessibilityIdentifier("show-now-button")
 
                 Menu {
                     Button(action: { showingEditSheet = true }) {
@@ -143,6 +144,7 @@ struct DocumentDetailView: View {
                         Label("Share", systemImage: "square.and.arrow.up")
                     }
                     .disabled(decryptedImages.isEmpty)
+                    .accessibilityIdentifier("share-button")
                     Button(role: .destructive, action: { showingDeleteAlert = true }) {
                         Label("Delete", systemImage: "trash")
                     }
