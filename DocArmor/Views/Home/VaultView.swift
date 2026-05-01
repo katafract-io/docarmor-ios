@@ -2375,9 +2375,12 @@ private struct RenewalWorkflowSheet: View {
                 guard let days = doc.daysUntilExpiry else { return false }
                 return !doc.isExpired && days <= 30 && days > 0
             case "Finish Setup":
-                return doc.isIncomplete
+                // TODO: Document.isIncomplete property doesn't exist yet — stub to false
+                // so this workflow card shows no docs rather than compile-failing the build.
+                return false
             case "Verify":
-                return doc.requiresReview
+                // TODO: Document.requiresReview property doesn't exist yet — same as above.
+                return false
             default:
                 return false
             }
