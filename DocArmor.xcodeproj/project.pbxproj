@@ -285,6 +285,10 @@
 					D0C0A10A2F90000100C0FFEE = {
 						CreatedOnToolsVersion = 26.3;
 					};
+					F1A2B3C4D5E6F008A2B3C4D5 = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = 268164EE7D2044D1A8DDB1F4;
+					};
 				};
 			};
 			buildConfigurationList = AFC933BE4BA245DDA27828E3 /* Build configuration list for PBXProject "DocArmor" */;
@@ -307,6 +311,7 @@
 				268164EE7D2044D1A8DDB1F4 /* DocArmor */,
 				BC38117E2F7397AC00CE6623 /* DocArmorWidgetExtension */,
 				D0C0A10A2F90000100C0FFEE /* DocArmorShareExtension */,
+				F1A2B3C4D5E6F008A2B3C4D5 /* DocArmorUITests */,
 			);
 		};
 /* End PBXProject section */
