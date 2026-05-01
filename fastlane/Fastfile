@@ -1,7 +1,24 @@
 # Katafract screenshot pipeline — fastlane lanes
 # Doctrine: feedback_screenshots_never_manual.md — every UI change auto-refreshes.
+# Safety: feedback_validate_one_png_before_long_watcher.md — never let a 0-PNG run wipe ASC.
 
 default_platform(:ios)
+
+# Aborts the lane unless at least MIN_SHOTS PNG files exist under fastlane/screenshots/.
+# Prevents `deliver overwrite_screenshots:true` from blanking ASC when capture silently
+# produced nothing (e.g. flag mismatch, broken accessibility identifier, scheme drift).
+def assert_screenshots_present!(min_shots: 1)
+  pattern = File.join(Dir.pwd, "screenshots", "**", "*.png")
+  shots = Dir.glob(pattern)
+  if shots.size < min_shots
+    UI.user_error!(
+      "Refusing to deliver: only #{shots.size} PNG(s) under fastlane/screenshots/ " \
+      "(need >= #{min_shots}). Capture step produced no images — would wipe ASC if " \
+      "we proceeded with overwrite_screenshots:true."
+    )
+  end
+  UI.success("Found #{shots.size} screenshot PNG(s) — safe to deliver")
+end
 
 platform :ios do
   desc "Capture screenshots locally (output: fastlane/screenshots/)"
@@ -9,9 +26,20 @@ platform :ios do
     capture_ios_screenshots
   end
 
+  desc "1-frame, 1-device smoke run — capture only, NEVER touches ASC. Use to validate the pipeline before submit_version_screenshots."
+  lane :smoke_screenshots do
+    capture_ios_screenshots(
+      devices: ["iPhone 17 Pro Max"],
+      only_testing: ["DocArmorUITests/ScreenshotTests/testVaultFiltered"]
+    )
+    assert_screenshots_present!(min_shots: 1)
+    UI.success("Smoke pass: at least one PNG produced. Safe to run full submit_version_screenshots.")
+  end
+
   desc "Capture + upload App Store Version screenshots to ASC (no binary, no metadata)"
   lane :submit_version_screenshots do
     capture_ios_screenshots
+    assert_screenshots_present!(min_shots: 6)
     api_key = app_store_connect_api_key(
       key_id: ENV["ASC_KEY_ID"],
       issuer_id: ENV["ASC_ISSUER_ID"],
@@ -31,6 +59,7 @@ platform :ios do
 
   desc "Re-upload screenshots from existing fastlane/screenshots/ without re-capturing"
   lane :resubmit_version_screenshots do
+    assert_screenshots_present!(min_shots: 6)
     api_key = app_store_connect_api_key(
       key_id: ENV["ASC_KEY_ID"],
       issuer_id: ENV["ASC_ISSUER_ID"],
