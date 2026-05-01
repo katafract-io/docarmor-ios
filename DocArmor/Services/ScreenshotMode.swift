@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import CryptoKit
+import UIKit  // for UIImage in attachMockPage()
 
 /// ScreenshotMode provides seed data for fastlane snapshot captures.
 /// Activated via either launch convention:
