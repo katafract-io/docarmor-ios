@@ -7,10 +7,12 @@ devices([
   "iPad Pro 13-inch (M5)"
 ])
 
-# Don't pin ios_version — runner has both iOS 26.4 (23E244) and 26.4.1 (23E254a)
-# installed and iPhone 17 Pro Max sim is built for 26.4.1, so OS=26.4 doesn't match.
-# Letting fastlane pick the latest installed runtime is more robust.
-# ios_version("26.4")
+# Pin to the actual installed sim runtime version. cmfmbp has iOS 26.4 (23E244)
+# AND 26.4.1 (23E254a). Fastlane snapshot's default picks the runtime *name* (26.4)
+# but the iPhone 17 Pro Max + iPad Pro 13" M5 sims are built against 26.4.1, so
+# `OS=26.4` fails to match. Pinning the patch version forces xcodebuild to pick
+# the correct runtime. Update if/when runner upgrades past 26.4.1.
+ios_version("26.4.1")
 
 languages(["en-US"])
 
