@@ -143,6 +143,7 @@ struct DocumentDetailView: View {
                         Label("Share", systemImage: "square.and.arrow.up")
                     }
                     .disabled(decryptedImages.isEmpty)
+                    .accessibilityIdentifier("share-button")
                     Button(role: .destructive, action: { showingDeleteAlert = true }) {
                         Label("Delete", systemImage: "trash")
                     }

@@ -61,6 +61,28 @@ class ScreenshotTests: XCTestCase {
         snapshot("05-settings")
     }
 
+    // MARK: - Frame 06: Tap-to-share (share sheet open over insurance card)
+
+    func testTapToShare() {
+        let app = launch(flags: defaultFlags + ["--auto-open", "insuranceAuto"])
+        sleep(3)
+        let shareButton = app.buttons.matching(identifier: "share-button").firstMatch
+        if shareButton.waitForExistence(timeout: 4) {
+            shareButton.tap()
+            sleep(2)  // let UIActivityViewController animate in
+        }
+        snapshot("06-tap-to-share")
+    }
+
+    // MARK: - Frame 07: Renewal awareness (expiration + renewal notes)
+
+    func testRenewal() {
+        let app = launch(flags: defaultFlags + ["--auto-open", "insuranceAuto"])
+        sleep(3)
+        // Auto insurance doc seeded with expirationDate ~60d out + renewal notes populated
+        snapshot("07-renewal-awareness")
+    }
+
     // MARK: - Helpers
 
     private var defaultFlags: [String] {

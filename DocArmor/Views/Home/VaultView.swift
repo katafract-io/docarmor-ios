@@ -595,6 +595,7 @@ struct VaultView: View {
                             .font(.title2)
                     }
                     .accessibilityLabel("Add Document")
+                    .accessibilityIdentifier("scan-button")
                 }
                 ToolbarItem(placement: .secondaryAction) {
                     if travelPackEnabled {

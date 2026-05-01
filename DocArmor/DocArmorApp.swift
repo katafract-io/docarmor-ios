@@ -34,6 +34,11 @@ struct DocArmorApp: App {
             fatalError("Failed to create SwiftData container: \(error)")
         }
 
+        // Apply screenshot-mode launch argument overrides
+        if ScreenshotLaunchArgs.skipOnboarding {
+            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        }
+
         // Provision vault key on first launch.
         // `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` requires the device
         // to have a passcode. If it doesn't, generate() throws and we surface a
@@ -104,12 +109,31 @@ struct DocArmorApp: App {
                 .task {
                     entitlementService.startListening()
                 }
+                .onAppear {
+                    wireAutoOpenIfNeeded()
+                }
                 .tint(KataAccent.gold)
         }
         .modelContainer(modelContainer)
     }
 
     // MARK: - Deep Link
+
+    /// Wires the --auto-open <documentType> launch argument to navigate to a document.
+    /// Dispatches via the existing pendingDocumentType path after a brief delay to allow
+    /// navigation hierarchy to be ready.
+    private func wireAutoOpenIfNeeded() {
+        guard let typeStr = ScreenshotLaunchArgs.autoOpenDocumentType,
+              let docType = DocumentType(rawValue: typeStr) else {
+            return
+        }
+
+        Task {
+            // Brief delay to let the navigation hierarchy initialize
+            try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
+            pendingDocumentType = docType
+        }
+    }
 
     /// Handles `docarmor://open?type=driversLicense` URLs from widgets and Siri.
     private func handleDeepLink(_ url: URL) {
