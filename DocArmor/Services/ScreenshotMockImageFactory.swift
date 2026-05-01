@@ -22,7 +22,7 @@ enum ScreenshotMockImageFactory {
             let borderPath = UIBezierPath(
                 roundedRect: borderRect,
                 byRoundingCorners: .allCorners,
-                withRadii: CGSize(width: 16, height: 16)
+                cornerRadii: CGSize(width: 16, height: 16)
             )
             UIColor.gray.setStroke()
             borderPath.lineWidth = 2
@@ -109,7 +109,7 @@ enum ScreenshotMockImageFactory {
             let borderPath = UIBezierPath(
                 roundedRect: borderRect,
                 byRoundingCorners: .allCorners,
-                withRadii: CGSize(width: 20, height: 20)
+                cornerRadii: CGSize(width: 20, height: 20)
             )
             UIColor.gray.setStroke()
             borderPath.lineWidth = 2
