@@ -14,7 +14,11 @@ struct LandscapeOnlyContainer<Content: View>: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> LandscapeOnlyHostingController<Content> {
         let vc = LandscapeOnlyHostingController(rootView: content)
-        vc.view.backgroundColor = .black
+        // Use clear background instead of black: when the rotation request
+        // races SwiftUI's first paint, an opaque black shows through and
+        // the user sees a "black preview" on first tap. Clear lets the
+        // transitioning fullScreenCover composite without the black flash.
+        vc.view.backgroundColor = .clear
         return vc
     }
 
@@ -29,8 +33,19 @@ final class LandscapeOnlyHostingController<Content: View>: UIHostingController<C
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+    private var didRequestRotation = false
+
+    /// Request rotation only after the first real layout pass and only once.
+    /// `viewDidAppear` fires during the fullScreenCover's present animation,
+    /// which races SwiftUI's first paint — calling requestGeometryUpdate
+    /// there shows the user a black frame on first tap (PR #76 deferred via
+    /// viewDidAppear but the race window is still open on iOS 17 / 18).
+    /// `viewDidLayoutSubviews` runs after the hosting controller has a real
+    /// frame to render into, which is the trigger we actually want.
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard !didRequestRotation, view.bounds.width > 0, view.window != nil else { return }
+        didRequestRotation = true
         setNeedsUpdateOfSupportedInterfaceOrientations()
         view.window?.windowScene?
             .requestGeometryUpdate(.iOS(interfaceOrientations: .landscapeRight)) { _ in }
