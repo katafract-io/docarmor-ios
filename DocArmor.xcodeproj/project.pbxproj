@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		80E2EB2169FD83F3E5A64944 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8275F68C496F5005E2F639C4 /* Foundation.framework */; };
 		A1B2C3D4E5F60003A2B3C4D5 /* KatafractStyle in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F60002A2B3C4D5 /* KatafractStyle */; };
 		BC3811822F7397AC00CE6623 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC3811812F7397AC00CE6623 /* WidgetKit.framework */; };
 		BC3811842F7397AC00CE6623 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC3811832F7397AC00CE6623 /* SwiftUI.framework */; };
@@ -55,7 +54,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8275F68C496F5005E2F639C4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		BC38117F2F7397AC00CE6623 /* DocArmorWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DocArmorWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BC3811812F7397AC00CE6623 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		BC3811832F7397AC00CE6623 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -136,7 +134,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				80E2EB2169FD83F3E5A64944 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,14 +147,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		3B4300FF0D0FED3A96DED78D /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				8275F68C496F5005E2F639C4 /* Foundation.framework */,
-			);
-			name = iOS;
-			sourceTree = "<group>";
-		};
 		7F31E9617BF54703BCB8493C /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -174,7 +163,6 @@
 			children = (
 				BC3811812F7397AC00CE6623 /* WidgetKit.framework */,
 				BC3811832F7397AC00CE6623 /* SwiftUI.framework */,
-				3B4300FF0D0FED3A96DED78D /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -298,6 +286,9 @@
 						CreatedOnToolsVersion = 26.3;
 					};
 					D0C0A10A2F90000100C0FFEE = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					A50D77F850C8E24BADA949AD = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
