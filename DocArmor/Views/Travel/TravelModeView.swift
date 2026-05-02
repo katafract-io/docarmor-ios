@@ -9,9 +9,7 @@ struct TravelModeView: View {
     @Query(sort: \Document.name) private var allDocuments: [Document]
 
     @State private var navigationPath = NavigationPath()
-    @State private var showingQuickPresent = false
-    @State private var quickPresentImages: [UIImage] = []
-    @State private var quickPresentDocumentName = ""
+    @State private var quickPresentPayload: QuickPresentPayload?
 
     private let travelTypes: Set<DocumentType> = [
         .passport, .driversLicense, .stateID, .globalEntry,
@@ -148,10 +146,10 @@ struct TravelModeView: View {
             .navigationDestination(for: Document.self) { document in
                 DocumentDetailView(document: document)
             }
-            .fullScreenCover(isPresented: $showingQuickPresent) {
+            .fullScreenCover(item: $quickPresentPayload) { payload in
                 PresentModeView(
-                    images: quickPresentImages,
-                    documentName: quickPresentDocumentName
+                    images: payload.images,
+                    documentName: payload.documentName
                 )
             }
             .sheet(isPresented: $showingPaywall) {
@@ -259,10 +257,9 @@ struct TravelModeView: View {
                 }
             }
 
-            quickPresentImages = document.sortedPages.compactMap { orderedImages[$0.pageIndex] }
-            guard !quickPresentImages.isEmpty else { return }
-            quickPresentDocumentName = document.name
-            showingQuickPresent = true
+            let images = document.sortedPages.compactMap { orderedImages[$0.pageIndex] }
+            guard !images.isEmpty else { return }
+            quickPresentPayload = QuickPresentPayload(images: images, documentName: document.name)
         } catch {
             // Fall back to the standard detail view if present mode cannot be prepared.
         }

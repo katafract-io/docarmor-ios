@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+struct QuickPresentPayload: Identifiable {
+    let id = UUID()
+    let images: [UIImage]
+    let documentName: String
+}
+
 /// Full-screen document display for showing to airport agents, hotel staff, etc.
 /// - Max brightness
 /// - Landscape orientation forced (via `LandscapeOnlyContainer` — orientation

@@ -57,9 +57,7 @@ struct VaultView: View {
     @State private var isBeingCaptured = false
     @State private var showingTravelMode = false
     @State private var showingImportInbox = false
-    @State private var showingQuickPresent = false
-    @State private var quickPresentImages: [UIImage] = []
-    @State private var quickPresentDocumentName = ""
+    @State private var quickPresentPayload: QuickPresentPayload?
     @State private var pendingImportCount = ImportInboxService.pendingCount()
     @AppStorage("smartPack.travelEnabled") private var travelPackEnabled = true
     @AppStorage("smartPack.vehicleEnabled") private var vehiclePackEnabled = true
@@ -624,10 +622,10 @@ struct VaultView: View {
             .sheet(item: $selectedRenewalWorkflow) { workflow in
                 RenewalWorkflowSheet(workflow: workflow, allDocuments: allDocuments)
             }
-            .fullScreenCover(isPresented: $showingQuickPresent) {
+            .fullScreenCover(item: $quickPresentPayload) { payload in
                 PresentModeView(
-                    images: quickPresentImages,
-                    documentName: quickPresentDocumentName
+                    images: payload.images,
+                    documentName: payload.documentName
                 )
             }
             .onChange(of: pendingDocumentType.wrappedValue) { _, type in
@@ -2015,10 +2013,9 @@ struct VaultView: View {
                 }
             }
 
-            quickPresentImages = document.sortedPages.compactMap { orderedImages[$0.pageIndex] }
-            guard !quickPresentImages.isEmpty else { return }
-            quickPresentDocumentName = document.name
-            showingQuickPresent = true
+            let images = document.sortedPages.compactMap { orderedImages[$0.pageIndex] }
+            guard !images.isEmpty else { return }
+            quickPresentPayload = QuickPresentPayload(images: images, documentName: document.name)
         } catch {
             // Ignore failed quick-present attempts; the detail view remains available.
         }

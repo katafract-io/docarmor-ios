@@ -5,3 +5,15 @@ DocArmor.xcodeproj/xcuserdata/
 DocArmor.xcodeproj/project.xcworkspace/xcuserdata/
 Products/
 Frameworks/
+
+# Local AI handoff / working memory (not repo state)
+MEMORY.md
+memory.md
+docs/
+.codex/
+.agents/
+.ai/
+CLAUDE.local.md
+CODEX.local.md
+*.ai.md
+*.handoff.md
