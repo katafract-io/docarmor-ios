@@ -6,15 +6,12 @@ class ScreenshotTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    // MARK: - Frame 01: Vault with household filter active
+    // MARK: - Frame 01: Vault with household docs
 
     func testVaultFiltered() {
-        // Frame 01: vault home with seeded household docs.
-        // Note: filter-christian lives inside a SwiftUI Menu and is not reachable
-        // via the accessibility tree until the menu is expanded — taps no-op
-        // silently. For now this frame shows the unfiltered seeded vault, which
-        // is still representative. A future change can pre-select the owner
-        // filter via a launch arg to capture the filtered state directly.
+        // filter-christian lives inside a SwiftUI Menu and is not reachable
+        // via the accessibility tree until the menu is expanded; the
+        // unfiltered seeded vault is representative for now.
         _ = launch(flags: defaultFlags)
         sleep(3)
         snapshot("01-vault-filtered")
@@ -28,43 +25,45 @@ class ScreenshotTests: XCTestCase {
         snapshot("02-detail-expiring")
     }
 
-    // MARK: - Frame 03: Tap-to-share
+    // MARK: - Frame 03: Tap-to-share (Document Actions menu expanded)
 
     func testTapToShare() {
         let app = launch(flags: defaultFlags + ["--auto-open", "insuranceAuto"])
         sleep(3)
-        let share = app.buttons.matching(identifier: "share-button").firstMatch
-        if share.waitForExistence(timeout: 4) {
-            share.tap()
-            sleep(3)  // animate in
-        }
+        // Wait for decryption so Share is enabled (it's .disabled when decryptedImages.isEmpty).
+        XCTAssertTrue(waitForEnabled(app.buttons["document-actions-menu"], timeout: 10),
+                      "Document Actions menu never enabled")
+        app.buttons["document-actions-menu"].tap()
+        sleep(2) // menu animates in; Share becomes part of accessibility tree
+        let share = app.buttons["share-button"]
+        XCTAssertTrue(share.waitForExistence(timeout: 4), "share-button missing inside Menu")
+        share.tap()
+        sleep(3) // confirmation dialog animates in
         snapshot("03-share-sheet")
     }
 
-    // MARK: - Frame 04: Present mode (landscape) — GATED on PR #79
+    // MARK: - Frame 04: Present mode (landscape full-screen)
 
     func testPresentMode() {
         let app = launch(flags: defaultFlags + ["--auto-open", "driversLicense"])
         sleep(3)
-        let showNow = app.buttons.matching(identifier: "show-now-button").firstMatch
-        if showNow.waitForExistence(timeout: 4) {
-            showNow.tap()
-            sleep(4)  // wait for landscape rotation animation to complete
-        }
+        let showNow = app.buttons["show-now-button"]
+        XCTAssertTrue(waitForEnabled(showNow, timeout: 10),
+                      "show-now-button never enabled (decryptedImages still empty after 10s)")
+        showNow.tap()
+        sleep(4) // landscape rotation + present-mode animation
         snapshot("04-present-mode")
     }
 
-    // MARK: - Frame 05: Preparedness with household gap drilled in
+    // MARK: - Frame 05: Preparedness with household gap
 
     func testPreparednessGap() {
         let app = launch(flags: defaultFlags + ["--seed-data", "preparedness"])
         sleep(3)
-        // Preparedness checklist is inline in VaultView. Tap the Travel checklist row
-        // to drill into household member gaps (Jane's missing passport + vaccine).
         let travelChecklist = app.buttons.matching(identifier: "preparedness-travel").firstMatch
         if travelChecklist.waitForExistence(timeout: 4) {
             travelChecklist.tap()
-            sleep(3)  // wait for detail sheet to animate in
+            sleep(3)
         }
         snapshot("05-preparedness-gap")
     }
@@ -75,12 +74,12 @@ class ScreenshotTests: XCTestCase {
         let unsubFlags = ["--screenshots", "--skip-onboarding", "--mock-unsubscribed", "--seed-data", "full-vault"]
         let app = launch(flags: unsubFlags + ["--auto-open", "driversLicense"])
         sleep(3)
-        // Attempt Present Mode → triggers paywall (PresentModeView checks entitlement)
-        let showNow = app.buttons.matching(identifier: "show-now-button").firstMatch
-        if showNow.waitForExistence(timeout: 4) {
-            showNow.tap()
-            sleep(3)  // paywall sheet animates in
-        }
+        // Present Mode tap → PresentModeView entitlement check → paywall sheet for unsubscribed.
+        let showNow = app.buttons["show-now-button"]
+        XCTAssertTrue(waitForEnabled(showNow, timeout: 10),
+                      "show-now-button never enabled in unsubscribed mode")
+        showNow.tap()
+        sleep(3) // paywall sheet animates in
         snapshot("06-paywall")
     }
 
@@ -96,5 +95,17 @@ class ScreenshotTests: XCTestCase {
         app.launchArguments += flags
         app.launch()
         return app
+    }
+
+    /// Polls until the element exists AND is enabled, or timeout.
+    /// XCUIElement.waitForExistence returns true even for disabled elements,
+    /// so disabled-button taps no-op silently. This catches that case.
+    private func waitForEnabled(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.exists && element.isEnabled { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return false
     }
 }

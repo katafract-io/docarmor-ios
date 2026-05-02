@@ -152,6 +152,7 @@ struct DocumentDetailView: View {
                     Image(systemName: "ellipsis.circle")
                 }
                 .accessibilityLabel("Document Actions")
+                .accessibilityIdentifier("document-actions-menu")
             }
         }
         .task {
