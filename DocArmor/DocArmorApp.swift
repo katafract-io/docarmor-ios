@@ -123,14 +123,16 @@ struct DocArmorApp: App {
     /// Dispatches via the existing pendingDocumentType path after a brief delay to allow
     /// navigation hierarchy to be ready.
     private func wireAutoOpenIfNeeded() {
-        guard let typeStr = ScreenshotLaunchArgs.autoOpenDocumentType,
-              let docType = DocumentType(rawValue: typeStr) else {
-            return
-        }
+        guard let typeStr = ScreenshotLaunchArgs.autoOpenDocumentType else { return }
+
+        // Accept either the human raw value ("Auto Insurance") OR the case name
+        // ("insuranceAuto") — UI tests pass case names, deep links pass raw values.
+        let docType = DocumentType(rawValue: typeStr)
+            ?? DocumentType.allCases.first(where: { String(describing: $0) == typeStr })
+        guard let docType else { return }
 
         Task {
-            // Brief delay to let the navigation hierarchy initialize
-            try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
+            try? await Task.sleep(nanoseconds: 500_000_000)
             pendingDocumentType = docType
         }
     }

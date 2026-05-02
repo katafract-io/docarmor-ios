@@ -842,42 +842,45 @@ struct VaultView: View {
 
     @ViewBuilder
     private func preparednessRow(_ item: PreparednessChecklistItem) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: item.systemImage)
-                .foregroundStyle(item.isReady ? Color.green : Color.kataGold)
-                .frame(width: 22)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(item.title)
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Text(item.statusText)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(item.isReady ? Color.green : Color.kataGold)
-                }
-
-                Text(item.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if !item.gapPreview.isEmpty {
-                    Text(item.gapPreview)
-                        .font(.caption2)
-                        .foregroundStyle(Color.kataGold)
-                        .lineLimit(2)
-                }
-            }
-
-            Spacer()
-            Image(systemName: "chevron.right")
-                .foregroundStyle(.tertiary)
-                .frame(width: 22)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             selectedPreparednessItem = item
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: item.systemImage)
+                    .foregroundStyle(item.isReady ? Color.green : Color.kataGold)
+                    .frame(width: 22)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(item.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(item.statusText)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(item.isReady ? Color.green : Color.kataGold)
+                    }
+
+                    Text(item.caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if !item.gapPreview.isEmpty {
+                        Text(item.gapPreview)
+                            .font(.caption2)
+                            .foregroundStyle(Color.kataGold)
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 22)
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .padding(.vertical, 2)
         .accessibilityIdentifier("preparedness-\(item.title.lowercased().replacingOccurrences(of: " ", with: "-"))")
     }
