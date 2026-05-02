@@ -36,6 +36,7 @@ struct AddDocumentView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(EntitlementService.self) private var entitlementService
     @Query private var allDocuments: [Document]
 
     // Edit mode: pass an existing document
@@ -1094,6 +1095,10 @@ struct AddDocumentView: View {
                 throw DocumentSaveError.noPagesToSave
             }
 
+            // Track which document was saved so we can back it up after the
+            // local write succeeds.
+            var savedDocument: Document?
+
             if let doc = editingDocument {
                 // Update existing document metadata
                 applyFormMetadata(to: doc)
@@ -1104,15 +1109,18 @@ struct AddDocumentView: View {
                 }
 
                 ExpirationService.updateReminder(for: doc)
+                savedDocument = doc
             } else if case .appendToExisting(let existingDocument) = mode {
                 applyFormMetadata(to: existingDocument)
                 try await appendCapturedPages(to: existingDocument, using: key)
                 ExpirationService.updateReminder(for: existingDocument)
+                savedDocument = existingDocument
             } else if case .replaceExisting(let existingDocument) = mode {
                 applyFormMetadata(to: existingDocument)
                 replacePages(in: existingDocument)
                 try await addCapturedPages(to: existingDocument, startingAt: 0, using: key)
                 ExpirationService.updateReminder(for: existingDocument)
+                savedDocument = existingDocument
             } else {
                 // Create new document + encrypt pages
                 let document = Document(
@@ -1139,6 +1147,7 @@ struct AddDocumentView: View {
                 try await addCapturedPages(to: document, startingAt: 0, using: key)
 
                 ExpirationService.scheduleReminder(for: document)
+                savedDocument = document
             }
 
             // Reset flag before dismiss so re-presentation doesn't flash "Saving…"
@@ -1148,6 +1157,18 @@ struct AddDocumentView: View {
                 }
             }
             try modelContext.save()
+
+            // Cloud backup: fire-and-forget for Sovereign/Founder users.
+            // Never blocks the save or the dismiss.
+            let backupEnabled = UserDefaults.standard.object(forKey: "sovereignBackup.enabled") as? Bool ?? true
+            if entitlementService.hasCloudBackup, backupEnabled, let doc = savedDocument {
+                let capturedKey = key
+                let capturedDoc = doc
+                Task.detached(priority: .background) {
+                    await SovereignBackupService.backup(document: capturedDoc, vaultKey: capturedKey)
+                }
+            }
+
             isSaving = false
             DocArmorHaptic.documentSaved()
             dismiss()

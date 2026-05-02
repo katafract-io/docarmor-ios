@@ -80,6 +80,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @Environment(AuthService.self) private var auth
     @Environment(AutoLockService.self) private var autoLock
+    @Environment(EntitlementService.self) private var entitlementService
     @Query private var allDocuments: [Document]
 
     @State private var showingResetAlert = false
@@ -118,6 +119,7 @@ struct SettingsView: View {
     @State private var customPacks: [SavedCustomPack] = []
     @State private var foundationModelStatus: FoundationModelAvailabilityService.Status = .unavailable(.frameworkUnavailable)
     @State private var vaultKeyExists: Bool = false
+    @AppStorage("sovereignBackup.enabled") private var sovereignBackupEnabled = true
     @State private var hasLoadedInitialState = false
     @FocusState private var focusedField: FocusedField?
 
@@ -163,6 +165,17 @@ struct SettingsView: View {
                             .foregroundStyle(Color.kataChampagne.opacity(0.85))
                     }
                     .disabled(isResetting)
+                }
+
+                if entitlementService.hasCloudBackup {
+                    Section("Cloud Backup (Sovereign)") {
+                        Toggle(isOn: $sovereignBackupEnabled) {
+                            Label("Back up to Vaultyx", systemImage: "icloud.and.arrow.up.fill")
+                        }
+                        Text("When enabled, document metadata is encrypted with your local vault key and backed up to your 1 TB Vaultyx storage. Image pages stay on-device.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("Encrypted Backup") {
