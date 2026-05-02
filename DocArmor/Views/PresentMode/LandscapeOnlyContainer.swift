@@ -36,6 +36,11 @@ final class LandscapeOnlyHostingController<Content: View>: UIHostingController<C
             .requestGeometryUpdate(.iOS(interfaceOrientations: .landscapeRight)) { _ in }
     }
 
+    /// Explicit empty deinit works around a Swift 6.3.1 EarlyPerfInliner segfault
+    /// on the synthesized deinit of this generic UIHostingController subclass.
+    /// (Run 25243883558 swift-frontend SIGSEGV on @$s8DocArmor30LandscapeOnlyHostingControllerCfD)
+    deinit {}
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         view.window?.windowScene?
