@@ -711,22 +711,22 @@ struct VaultView: View {
 
     private var statsBanner: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(statsCount) documents")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.primary)
-                }
+            HStack(spacing: 12) {
+                Text("\(statsCount) documents")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
 
-                Divider()
+                Divider().frame(height: 18)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(householdMemberCount) household members")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.primary)
-                }
+                Text("\(householdMemberCount) household members")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
 
-                Divider()
+                Divider().frame(height: 18)
 
                 HStack(spacing: 4) {
                     Image(systemName: "lock.fill")
@@ -735,6 +735,8 @@ struct VaultView: View {
                     Text("End-to-end encrypted")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
             }
             .padding(.horizontal)
