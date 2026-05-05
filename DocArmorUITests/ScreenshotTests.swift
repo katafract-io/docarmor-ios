@@ -7,6 +7,7 @@ final class ScreenshotTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["-ScreenshotMode", "seedData"]
+        setupSnapshot(app)
         app.launch()
     }
 
@@ -94,6 +95,7 @@ final class ScreenshotTests_iPad: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["-ScreenshotMode", "seedData"]
+        setupSnapshot(app)
         app.launch()
     }
 
@@ -129,16 +131,5 @@ final class ScreenshotTests_iPad: XCTestCase {
 
         sleep(1)
         snapshot("03_Settings_iPad13ProM5")
-    }
-}
-
-// MARK: - Snapshot Helper
-
-func snapshot(_ name: String) {
-    // Fastlane snapshot integration point — will be called by fastlane's snapshot() function
-    // For local testing, this is a no-op; CI workflow uses FASTLANE_SNAPSHOT=1
-    if ProcessInfo.processInfo.environment["FASTLANE_SNAPSHOT"] == "1" {
-        // Fastlane will intercept this function call
-        XCUIApplication().snapshot(name)
     }
 }

@@ -13,6 +13,7 @@ open class ScreenshotUITestsBase: XCTestCase {
             app.launchArguments = ["-ScreenshotMode", "seedData"]
         }
 
+        setupSnapshot(app)
         app.launch()
     }
 

@@ -52,10 +52,7 @@
 		BC3811832F7397AC00CE6623 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		CCC915A576C44C2F9A6E6450 /* DocArmor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DocArmor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C0A1002F90000100C0FFEE /* DocArmorShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DocArmorShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		22C7E190362840C99CE43A25 /* EntitlementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocArmor/Services/EntitlementService.swift; sourceTree = "<group>"; };
-		470CD547808D4E78969BDDD5 /* ProductID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocArmor/Models/ProductID.swift; sourceTree = "<group>"; };
-		51FE14F3E63A45C0BE27FA17 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocArmor/Views/Paywall/PaywallView.swift; sourceTree = "<group>"; };
-		2970969CAAC84B5F8611EB32 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = DocArmor/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		E2F362C96416BE311AD0F128 /* SnapshotHelper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -78,6 +75,8 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4CDC3B3D17A545FEA820D9F2 /* DocArmor */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = DocArmor;
 			sourceTree = "<group>";
 		};
@@ -127,6 +126,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6866DE1E7CE309A83068310F /* DocArmorUITests */ = {
+			isa = PBXGroup;
+			children = (
+				E2F362C96416BE311AD0F128 /* SnapshotHelper.swift */,
+			);
+			name = DocArmorUITests;
+			sourceTree = "<group>";
+		};
 		7F31E9617BF54703BCB8493C /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -154,6 +161,7 @@
 				D0C0A1052F90000100C0FFEE /* DocArmorShareExtension */,
 				BC3811802F7397AC00CE6623 /* Frameworks */,
 				7F31E9617BF54703BCB8493C /* Products */,
+				6866DE1E7CE309A83068310F /* DocArmorUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -202,8 +210,6 @@
 				BC3811852F7397AC00CE6623 /* DocArmorWidgetExtension */,
 			);
 			name = DocArmorWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = DocArmorWidgetExtension;
 			productReference = BC38117F2F7397AC00CE6623 /* DocArmorWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -224,8 +230,6 @@
 				D0C0A1052F90000100C0FFEE /* DocArmorShareExtension */,
 			);
 			name = DocArmorShareExtension;
-			packageProductDependencies = (
-			);
 			productName = DocArmorShareExtension;
 			productReference = D0C0A1002F90000100C0FFEE /* DocArmorShareExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -260,12 +264,12 @@
 			);
 			mainGroup = D9C45622D4A2419C94490E2F;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
-			productRefGroup = 7F31E9617BF54703BCB8493C /* Products */;
-			projectDirPath = "";
 			packageReferences = (
 				A1B2C3D4E5F60001A2B3C4D5 /* XCRemoteSwiftPackageReference "KatafractStyle" */,
 			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 7F31E9617BF54703BCB8493C /* Products */;
+			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				268164EE7D2044D1A8DDB1F4 /* DocArmor */,
@@ -439,8 +443,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DocArmorWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DocArmorWidgetExtension;
@@ -470,8 +474,8 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DocArmorWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DocArmorWidgetExtension;
@@ -498,8 +502,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DocArmorShareExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Save to DocArmor";
@@ -527,8 +531,8 @@
 			buildSettings = {
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 2SGGP65W6C;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DocArmorShareExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Save to DocArmor";
@@ -697,6 +701,7 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		A1B2C3D4E5F60001A2B3C4D5 /* XCRemoteSwiftPackageReference "KatafractStyle" */ = {
 			isa = XCRemoteSwiftPackageReference;
