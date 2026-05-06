@@ -39,7 +39,7 @@ enum PaywallReason {
 }
 
 /// Three paths to unlock:
-///   1. One-time DocArmor unlock IAP ($12.99) — full local features.
+///   1. One-time DocArmor unlock IAP ($7.99) — full local features.
 ///   2. Enclave/Sovereign/Founder bundle token (via shared App Group) — full local features.
 ///   3. Sovereign subscription (sold in Vaultyx) — local features + cloud backup.
 ///
@@ -139,7 +139,7 @@ struct PaywallView: View {
                         .foregroundStyle(Color.white.opacity(0.7))
                 }
                 Spacer()
-                Text(entitlementService.unlockProduct?.displayPrice ?? "$12.99")
+                Text(entitlementService.unlockProduct?.displayPrice ?? "$7.99")
                     .font(.title3.bold())
                     .foregroundStyle(.white)
             }
@@ -163,7 +163,7 @@ struct PaywallView: View {
                         KataProgressRing(size: 16)
                     } else {
                         Image(systemName: "lock.open.fill")
-                        Text("Unlock for \(entitlementService.unlockProduct?.displayPrice ?? "$12.99")")
+                        Text("Unlock for \(entitlementService.unlockProduct?.displayPrice ?? "$7.99")")
                             .font(.headline)
                     }
                 }
