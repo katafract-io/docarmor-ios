@@ -1376,7 +1376,7 @@ struct VaultView: View {
                     }
                 } header: {
                     Label("Recently Added", systemImage: "clock.fill")
-                        .foregroundStyle(Color.kataIce)
+                        .foregroundStyle(Color.secondary)
                 }
             }
 
@@ -2278,7 +2278,7 @@ struct DocumentRow: View {
                 HStack(spacing: 4) {
                     Text(document.name)
                         .font(.kataDisplay(15))
-                        .foregroundStyle(Color.kataIce)
+                        .foregroundStyle(Color.primary)
                     if document.isFavorite {
                         Image(systemName: "star.fill")
                             .font(.caption2)
@@ -2287,10 +2287,10 @@ struct DocumentRow: View {
                 }
                 Text(document.documentType.rawValue)
                     .font(.kataCaption(11))
-                    .foregroundStyle(Color.kataIce.opacity(0.5))
+                    .foregroundStyle(Color.secondary)
                 Label(ownerLabel, systemImage: document.ownerName == nil ? "person.2.fill" : "person.fill")
                     .font(.kataCaption(11))
-                    .foregroundStyle(Color.kataIce.opacity(0.35))
+                    .foregroundStyle(Color.secondary.opacity(0.7))
                 if document.isMissingRequiredPages {
                     Label("Missing page", systemImage: "doc.badge.plus")
                         .font(.kataCaption(11))
