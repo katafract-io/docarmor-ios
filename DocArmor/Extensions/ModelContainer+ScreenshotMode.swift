@@ -1,5 +1,6 @@
 import SwiftData
 
+#if DEBUG
 extension ModelContainer {
     /// Seeds the model container with synthetic documents when ScreenshotMode is active.
     func seedScreenshotModeData() {
@@ -19,3 +20,4 @@ extension ModelContainer {
         }
     }
 }
+#endif
