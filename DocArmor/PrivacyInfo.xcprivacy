@@ -10,9 +10,9 @@
     <array>
         <dict>
             <key>NSPrivacyCollectedDataType</key>
-            <string>NSPrivacyCollectedDataTypeOtherDataTypes</string>
+            <string>NSPrivacyCollectedDataTypePurchaseHistory</string>
             <key>NSPrivacyCollectedDataTypeLinked</key>
-            <false/>
+            <true/>
             <key>NSPrivacyCollectedDataTypeTracking</key>
             <false/>
             <key>NSPrivacyCollectedDataTypePurposes</key>
@@ -53,6 +53,14 @@
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
                 <string>CA92.1</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryKeychain</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>KEYC.1</string>
             </array>
         </dict>
     </array>
