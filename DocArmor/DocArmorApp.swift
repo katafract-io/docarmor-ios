@@ -104,6 +104,10 @@ struct DocArmorApp: App {
                         if authService.state == .locked {
                             Task { await authService.authenticate() }
                         }
+                        // Retry any unsynced documents in background
+                        Task.detached(priority: .background) {
+                            await retrySovereignBackups(modelContainer: modelContainer)
+                        }
                     default:
                         break
                     }
@@ -222,6 +226,40 @@ struct DocArmorApp: App {
             var resourceValues = URLResourceValues()
             resourceValues.isExcludedFromBackup = true
             try? url.setResourceValues(resourceValues)
+        }
+    }
+
+    /// Retry backup for all documents with lastBackedUpAt == nil (never backed up).
+    /// Called on scene .active when user has Sovereign/Founder plan and backup is enabled.
+    private nonisolated func retrySovereignBackups(modelContainer: ModelContainer) async {
+        guard SovereignBackupService.sovereignToken() != nil else { return }
+        guard UserDefaults.standard.object(forKey: "sovereignBackup.enabled") as? Bool ?? true else { return }
+
+        let key: SymmetricKey
+        do {
+            key = try VaultKey.load()
+        } catch {
+            return
+        }
+
+        let ctx = ModelContext(modelContainer)
+        let unsynced: [Document]
+        do {
+            unsynced = try ctx.fetch(FetchDescriptor<Document>(
+                predicate: #Predicate { $0.lastBackedUpAt == nil }
+            ))
+        } catch {
+            return
+        }
+
+        for doc in unsynced {
+            let success = await SovereignBackupService.backup(document: doc, vaultKey: key)
+            if success {
+                await MainActor.run {
+                    doc.lastBackedUpAt = Date.now
+                    try? ctx.save()
+                }
+            }
         }
     }
 }

@@ -29,6 +29,10 @@ final class Document {
     var createdAt: Date
     var updatedAt: Date
     var isFavorite: Bool
+    /// Date of last successful Sovereign cloud backup (nil = never backed up or backup not applicable).
+    var lastBackedUpAt: Date?
+    /// SHA-256 hash of last successfully backed-up payload (for change detection).
+    var lastBackupHash: String?
 
     @Relationship(deleteRule: .cascade)
     var pages: [DocumentPage]

@@ -1165,7 +1165,13 @@ struct AddDocumentView: View {
                 let capturedKey = key
                 let capturedDoc = doc
                 Task.detached(priority: .background) {
-                    await SovereignBackupService.backup(document: capturedDoc, vaultKey: capturedKey)
+                    let success = await SovereignBackupService.backup(document: capturedDoc, vaultKey: capturedKey)
+                    if success {
+                        await MainActor.run {
+                            capturedDoc.lastBackedUpAt = Date.now
+                            try? capturedDoc.modelContext?.save()
+                        }
+                    }
                 }
             }
 
