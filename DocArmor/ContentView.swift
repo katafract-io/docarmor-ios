@@ -1,10 +1,16 @@
 import SwiftUI
 
 /// Root auth-gate router. Switches between the lock screen and the main vault
-/// based on `AuthService.state`. Also wires auto-lock activity tracking.
+/// based on `AuthService.state`. Also wires auto-lock activity tracking and the
+/// first-run onboarding gate.
 struct ContentView: View {
     @Environment(AuthService.self) private var auth
     @Environment(AutoLockService.self) private var autoLock
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    private var showOnboarding: Bool {
+        auth.state == .unlocked && !hasCompletedOnboarding
+    }
 
     var body: some View {
         Group {
@@ -23,6 +29,14 @@ struct ContentView: View {
         .onChange(of: auth.state) { _, newState in
             if newState == .unlocked {
                 autoLock.recordActivity()
+            }
+        }
+        .fullScreenCover(isPresented: .init(
+            get: { showOnboarding },
+            set: { if !$0 { hasCompletedOnboarding = true } }
+        )) {
+            OnboardingView {
+                hasCompletedOnboarding = true
             }
         }
     }
