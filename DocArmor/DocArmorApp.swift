@@ -16,6 +16,14 @@ struct DocArmorApp: App {
     @State private var pendingDocumentType: DocumentType?
     @State private var pendingCategory: DocumentCategory?
 
+    // Key loss detection: set when VaultKey is absent on launch but documents exist
+    @AppStorage("docarmor.keyLostWithDocuments") private var keyLostWithDocuments = false
+
+    // Backup nag: shown once every 7 days when user has 3+ documents and never exported
+    @AppStorage("docarmor.hasExportedBackup") private var hasExportedBackup = false
+    @AppStorage("docarmor.backupNagShownDate") private var backupNagShownDate = 0.0
+    @State private var showBackupNag = false
+
     private let modelContainer: ModelContainer
 
     init() {
@@ -44,6 +52,15 @@ struct DocArmorApp: App {
         // to have a passcode. If it doesn't, generate() throws and we surface a
         // flag so the UI can explain the situation instead of failing silently later.
         if !VaultKey.exists {
+            // Check if user already has documents encrypted with the (now lost) key.
+            // This happens when the device passcode changes, revoking WhenPasscodeSetThisDeviceOnly keys.
+            let tempContext = ModelContext(modelContainer)
+            let docCount = (try? tempContext.fetchCount(FetchDescriptor<Document>())) ?? 0
+            if docCount > 0 {
+                // Key was revoked (passcode change) but encrypted documents exist.
+                // New key will be generated but old docs are permanently unreadable.
+                UserDefaults.standard.set(true, forKey: "docarmor.keyLostWithDocuments")
+            }
             do {
                 try VaultKey.generate()
             } catch {
@@ -108,9 +125,52 @@ struct DocArmorApp: App {
                 }
                 .task {
                     entitlementService.startListening()
+                    // Check backup nag: show once if user has documents and never exported
+                    if !hasExportedBackup {
+                        let daysSinceNag = (Date.now.timeIntervalSince1970 - backupNagShownDate) / 86400
+                        if daysSinceNag > 7 {
+                            let ctx = modelContainer.mainContext
+                            let count = (try? ctx.fetchCount(FetchDescriptor<Document>())) ?? 0
+                            if count >= 3 {
+                                showBackupNag = true
+                                backupNagShownDate = Date.now.timeIntervalSince1970
+                            }
+                        }
+                    }
                 }
                 .onAppear {
                     wireAutoOpenIfNeeded()
+                }
+                .alert("Encryption Key Lost", isPresented: $keyLostWithDocuments) {
+                    Button("Reset Vault", role: .destructive) {
+                        // Delete all documents and clear the flag
+                        Task { @MainActor in
+                            do {
+                                let ctx = modelContainer.mainContext
+                                let docs = try ctx.fetch(FetchDescriptor<Document>())
+                                for doc in docs { ctx.delete(doc) }
+                                try ctx.save()
+                            } catch { }
+                            UserDefaults.standard.removeObject(forKey: "docarmor.keyLostWithDocuments")
+                            keyLostWithDocuments = false
+                        }
+                    }
+                    Button("Cancel", role: .cancel) {
+                        // User acknowledges but keeps (unreadable) documents for now
+                        keyLostWithDocuments = false
+                    }
+                } message: {
+                    Text("Your device passcode changed and the encryption key was revoked. Your existing documents can no longer be decrypted. Reset the vault to start fresh, or cancel to keep the encrypted files (they cannot be read).")
+                }
+                .alert("Back Up Your Vault", isPresented: $showBackupNag) {
+                    Button("Go to Settings") {
+                        // Navigate to settings/backup section
+                        pendingDocumentType = nil
+                        // Set a flag to navigate in ContentView if needed
+                    }
+                    Button("Not now", role: .cancel) { }
+                } message: {
+                    Text("You have 3+ documents. Regular backups protect against unexpected data loss. Export a backup to your Files app.")
                 }
                 .tint(KataAccent.gold)
         }
