@@ -26,20 +26,21 @@ enum SovereignBackupService {
 
     // MARK: - Public API
 
-    /// Attempt to back up `document` to Vaultyx. Fire-and-forget: call from a
-    /// detached Task so the save flow is never blocked.
+    /// Attempt to back up `document` to Vaultyx. Returns true iff all 4 steps succeeded.
+    /// Fire-and-forget: call from a detached Task so the save flow is never blocked.
     ///
     ///     Task.detached(priority: .background) {
-    ///         await SovereignBackupService.backup(document: savedDocument, vaultKey: key)
+    ///         let success = await SovereignBackupService.backup(document: savedDocument, vaultKey: key)
     ///     }
-    static func backup(document: Document, vaultKey: SymmetricKey) async {
-        guard let token = sovereignToken() else { return }
+    @discardableResult
+    static func backup(document: Document, vaultKey: SymmetricKey) async -> Bool {
+        guard let token = sovereignToken() else { return false }
 
         let payload: Data
         do {
             payload = try buildEncryptedPayload(document: document, key: vaultKey)
         } catch {
-            return
+            return false
         }
 
         let chunkHash = SHA256.hash(data: payload).compactMap { String(format: "%02x", $0) }.joined()
@@ -57,8 +58,10 @@ enum SovereignBackupService {
                 filenameEnc: filename,
                 token: token
             )
+            return true
         } catch {
             // Best-effort — local save already succeeded; log and move on.
+            return false
         }
     }
 
