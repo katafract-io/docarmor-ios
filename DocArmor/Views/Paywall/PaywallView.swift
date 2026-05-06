@@ -51,6 +51,8 @@ struct PaywallView: View {
 
     @Environment(\.openURL) private var openURL
     @State private var showingError = false
+    @State private var showRestoreResult = false
+    @State private var restoreResultMessage = ""
 
     /// Vaultyx App Store URL — where Sovereign is sold.
     private static let vaultyxAppStoreURL = URL(string: "https://apps.apple.com/app/id6762418528")!
@@ -96,7 +98,16 @@ struct PaywallView: View {
                 // MARK: Footer
                 VStack(spacing: 10) {
                     Button {
-                        Task { await entitlementService.restorePurchases() }
+                        Task {
+                            await entitlementService.restorePurchases()
+                            if let outcome = entitlementService.restoreOutcome {
+                                restoreResultMessage = outcome
+                                showRestoreResult = true
+                                if entitlementService.currentPlan >= .unlocked {
+                                    dismiss()
+                                }
+                            }
+                        }
                     } label: {
                         Text("Restore Purchases")
                             .font(.caption.weight(.semibold))
@@ -122,6 +133,11 @@ struct PaywallView: View {
         }
         .onChange(of: entitlementService.purchaseError) { _, new in
             showingError = new != nil
+        }
+        .alert("Restore Purchases", isPresented: $showRestoreResult) {
+            Button("OK") { entitlementService.restoreOutcome = nil }
+        } message: {
+            Text(restoreResultMessage)
         }
     }
 
