@@ -12,7 +12,7 @@ import SwiftUI
 ///     Packs, Household, Family Vault) show a paywall.
 ///
 ///   • `.unlocked` — the user paid the one-time `com.katafract.DocArmor.unlock`
-///     IAP ($12.99, non-consumable). All local features unlocked. Cloud
+///     IAP ($7.99, non-consumable). All local features unlocked. Cloud
 ///     backup still locked.
 ///
 ///   • `.sovereign` — the user has a Sovereign subscription in Vaultyx. Sigil
