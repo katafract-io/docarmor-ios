@@ -2353,9 +2353,10 @@ struct ExpirationBadge: View {
         return "Valid"
     }
 
-    /// Urgent = expired/expiring → kataChampagne (warm amber warning); healthy → kataGold faded.
     private var labelColor: Color {
-        isExpired || daysUntilExpiry <= 30 ? Color.kataChampagne : Color.kataGold.opacity(0.5)
+        if isExpired           { return .red }
+        if daysUntilExpiry <= 30 { return .orange }
+        return .green
     }
 
     var body: some View {
@@ -2363,7 +2364,7 @@ struct ExpirationBadge: View {
             .font(.kataMono(10))
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
-            .background(labelColor.opacity(0.12))
+            .background(labelColor.opacity(0.15))
             .foregroundStyle(labelColor)
             .clipShape(Capsule())
             .accessibilityLabel(isExpired ? "Expired" : "\(daysUntilExpiry) days until expiry")
