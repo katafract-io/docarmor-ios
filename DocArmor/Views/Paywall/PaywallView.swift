@@ -108,6 +108,12 @@ struct PaywallView: View {
                             .font(.caption)
                             .foregroundStyle(Color.white.opacity(0.55))
                     }
+
+                    Text("Sovereign is a subscription sold in the Vaultyx app that automatically renews at $18/month or $144/year unless cancelled at least 24 hours before the renewal date. Manage or cancel in App Store > Subscriptions.")
+                        .font(.caption2)
+                        .foregroundStyle(Color.white.opacity(0.38))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 20)
             }
