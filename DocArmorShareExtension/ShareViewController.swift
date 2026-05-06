@@ -8,10 +8,13 @@ final class ShareViewController: UIViewController {
     private let cancelButton = UIButton(type: .system)
     private let activityIndicator = UIActivityIndicatorView(style: .medium)
 
+    private static let maxFileSizeBytes: Int = 50 * 1024 * 1024  // 50 MB
+
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
         refreshDetailText()
+        cleanupStaleInboxItems()
     }
 
     private func configureUI() {
@@ -132,12 +135,16 @@ final class ShareViewController: UIViewController {
 
     private func persistImage(provider: NSItemProvider, into folder: URL) async throws {
         let data = try await loadDataRepresentation(provider: provider, type: .image)
+        try validateFileSize(data.count)
         let fileURL = folder.appendingPathComponent("share-\(UUID().uuidString).jpg")
         try data.write(to: fileURL, options: .atomic)
     }
 
     private func persistFileURL(provider: NSItemProvider, into folder: URL) async throws {
         let fileURL = try await loadFileURL(provider: provider)
+        let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        let fileSize = attributes[.size] as? Int ?? 0
+        try validateFileSize(fileSize)
         let destination = uniqueDestinationURL(in: folder, preferredName: fileURL.lastPathComponent)
         try FileManager.default.copyItem(at: fileURL, to: destination)
     }
@@ -148,6 +155,9 @@ final class ShareViewController: UIViewController {
         into folder: URL
     ) async throws {
         let sourceURL = try await loadFileRepresentation(provider: provider, type: type)
+        let attributes = try FileManager.default.attributesOfItem(atPath: sourceURL.path)
+        let fileSize = attributes[.size] as? Int ?? 0
+        try validateFileSize(fileSize)
         let destination = uniqueDestinationURL(in: folder, preferredName: sourceURL.lastPathComponent)
         try FileManager.default.copyItem(at: sourceURL, to: destination)
     }
@@ -215,6 +225,39 @@ final class ShareViewController: UIViewController {
                 }
                 continuation.resume(throwing: NSError(domain: "DocArmorShareExtension", code: 4, userInfo: [NSLocalizedDescriptionKey: "Shared file URL was unavailable."]))
             }
+        }
+    }
+
+    private func validateFileSize(_ size: Int) throws {
+        guard size <= Self.maxFileSizeBytes else {
+            throw NSError(
+                domain: "DocArmorShareExtension",
+                code: 413,
+                userInfo: [NSLocalizedDescriptionKey: "File too large. DocArmor supports files up to 50 MB."]
+            )
+        }
+    }
+
+    private func cleanupStaleInboxItems() {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.katafract.enclave") else {
+            return
+        }
+        let inboxURL = containerURL.appendingPathComponent("ImportInbox", isDirectory: true)
+        let cutoff = Date(timeIntervalSinceNow: -86400)  // 24 hours ago
+
+        do {
+            let contents = try FileManager.default.contentsOfDirectory(
+                at: inboxURL,
+                includingPropertiesForKeys: [.creationDateKey]
+            )
+            for itemURL in contents {
+                let resourceValues = try itemURL.resourceValues(forKeys: [.creationDateKey])
+                if let creationDate = resourceValues.creationDate, creationDate < cutoff {
+                    try FileManager.default.removeItem(at: itemURL)
+                }
+            }
+        } catch {
+            // Silent failure; stale cleanup is non-critical
         }
     }
 
