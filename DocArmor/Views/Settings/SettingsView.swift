@@ -170,7 +170,7 @@ struct SettingsView: View {
                 if entitlementService.hasCloudBackup {
                     Section("Cloud Backup (Sovereign)") {
                         Toggle(isOn: $sovereignBackupEnabled) {
-                            Label("Back up to Vaultyx", systemImage: "icloud.and.arrow.up.fill")
+                            Label("Back up vault index to Vaultyx", systemImage: "icloud.and.arrow.up.fill")
                         }
                         Text("When enabled, document metadata is encrypted with your local vault key and backed up to your 1 TB Vaultyx storage. Image pages stay on-device.")
                             .font(.caption)
