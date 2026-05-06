@@ -30,7 +30,7 @@ enum PaywallReason {
         case .familyVault:
             "Each person in the household gets their own organized vault, all encrypted together."
         case .cloudBackup:
-            "Keep an encrypted backup of your vault in Katafract Shards and sync across every device."
+            "Back up an encrypted index of your documents to Vaultyx storage (image pages stay on-device; full sync in a future update)."
         }
     }
 
@@ -41,7 +41,7 @@ enum PaywallReason {
 /// Three paths to unlock:
 ///   1. One-time DocArmor unlock IAP ($12.99) — full local features.
 ///   2. Enclave/Sovereign/Founder bundle token (via shared App Group) — full local features.
-///   3. Sovereign subscription (sold in Vaultyx) — local features + cloud backup.
+///   3. Sovereign subscription (sold in Vaultyx) — local features + vault index backup.
 ///
 /// Cloud Backup reason shows only path #2 (Sovereign).
 struct PaywallView: View {
