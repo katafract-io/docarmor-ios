@@ -102,7 +102,8 @@ struct DocArmorApp: App {
                     case .active:
                         autoLockService.startMonitoring()
                         // Trigger auth only on .active to avoid LAError.notInteractive
-                        if authService.state == .locked {
+                        // Skip auto-auth if --mock-locked was passed (for lock screen screenshot)
+                        if authService.state == .locked && !ScreenshotLaunchArgs.mockLocked {
                             Task { await authService.authenticate() }
                         }
                         // Retry any unsynced documents in background

@@ -661,6 +661,12 @@ struct VaultView: View {
             .onAppear {
                 normalizeSelectedBundleFilter()
             }
+            .onAppear {
+                // Open scanner sheet if --show-scanner flag was passed (for screenshot)
+                if ScreenshotLaunchArgs.showScanner {
+                    showingAddDocument = true
+                }
+            }
             .onChange(of: packVisibilitySignature) { _, _ in
                 normalizeSelectedBundleFilter()
             }

@@ -83,6 +83,24 @@ class ScreenshotTests: XCTestCase {
         snapshot("06-paywall")
     }
 
+    // MARK: - Frame 07: Lock screen / biometric gate
+
+    func testLockScreen() {
+        // --mock-locked prevents auto-authentication on launch, keeping vault locked
+        _ = launch(flags: defaultFlags + ["--mock-locked"])
+        sleep(2)
+        snapshot("07-lock-screen")
+    }
+
+    // MARK: - Frame 08: Import/scan flow — document scanner open
+
+    func testImportScan() {
+        // --show-scanner opens the AddDocumentView sheet with scanner displayed on launch
+        _ = launch(flags: defaultFlags + ["--show-scanner"])
+        sleep(3)
+        snapshot("08-import-scan")
+    }
+
     // MARK: - Helpers
 
     private var defaultFlags: [String] {

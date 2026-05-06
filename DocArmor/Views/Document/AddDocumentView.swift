@@ -655,6 +655,12 @@ struct AddDocumentView: View {
                     updatePageLabels()
                     applyInitialImportIfNeeded()
                 }
+                // Open scanner automatically if --show-scanner flag was passed (for screenshot)
+                if ScreenshotLaunchArgs.showScanner && !isEditing {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showingScanner = true
+                    }
+                }
             }
             .alert("Import Failed", isPresented: .init(
                 get: { importError != nil },

@@ -9,6 +9,8 @@ import Foundation
 ///   --auto-open <document-type>    Auto-navigate to a specific document type (e.g., "driversLicense")
 ///   --mock-subscribed              Override EntitlementService to return Sovereign tier
 ///   --mock-unsubscribed            Override EntitlementService to return locked (free) tier
+///   --mock-locked                  Keep the vault locked (force lock screen visibility)
+///   --show-scanner                 Open the document scanner on launch
 ///
 /// Usage:
 ///   if ScreenshotLaunchArgs.skipOnboarding {
@@ -53,5 +55,19 @@ enum ScreenshotLaunchArgs {
     /// Mutually exclusive with --mock-subscribed; --mock-subscribed wins if both are set.
     static var mockUnsubscribed: Bool {
         launchArgs.contains("--mock-unsubscribed")
+    }
+
+    /// Whether --mock-locked was passed.
+    /// If true, prevents automatic authentication on launch, keeping the vault locked.
+    /// Used to display the lock screen / biometric gate frame.
+    static var mockLocked: Bool {
+        launchArgs.contains("--mock-locked")
+    }
+
+    /// Whether --show-scanner was passed.
+    /// If true, opens the document scanner / import flow on launch.
+    /// Used to display the scanner / import sheet frame.
+    static var showScanner: Bool {
+        launchArgs.contains("--show-scanner")
     }
 }
