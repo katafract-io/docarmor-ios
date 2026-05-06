@@ -15,6 +15,7 @@ import Foundation
 /// when the 1.1.5 cloud-sync chunk lands. Until then this is a call-site
 /// stub so XCUITests can launch with --screenshots and not crash when
 /// ViewModels probe ScreenshotMode.
+#if DEBUG
 struct MockDataSeeder {
     static func seedDataIfNeeded() {
         guard CommandLine.arguments.contains("--screenshots") else { return }
@@ -22,3 +23,4 @@ struct MockDataSeeder {
         print("MockDataSeeder: TODO — wire to DocArmor document/preparedness models")
     }
 }
+#endif

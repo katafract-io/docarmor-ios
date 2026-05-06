@@ -36,6 +36,7 @@ final class EntitlementService {
     private(set) var isLoading: Bool = false
     private(set) var unlockProduct: Product?
     var purchaseError: String?
+    var restoreOutcome: String?
 
     // MARK: - Feature gates
 
@@ -137,6 +138,7 @@ final class EntitlementService {
     }
 
     func restorePurchases() async {
+        restoreOutcome = nil
         isLoading = true
         defer { isLoading = false }
         do {
@@ -145,6 +147,7 @@ final class EntitlementService {
             purchaseError = "Restore failed: \(error.localizedDescription)"
         }
         await refreshEntitlements()
+        restoreOutcome = currentPlan >= .unlocked ? "Unlock restored." : "No previous purchase found on this Apple ID."
     }
 
     /// Reconcile state across (a) current StoreKit entitlements, (b) the

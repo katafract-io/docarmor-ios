@@ -29,7 +29,9 @@ struct DocArmorApp: App {
         do {
             modelContainer = try ModelContainer(for: Document.self, DocumentPage.self, configurations: config)
             // Seed synthetic documents when ScreenshotMode is active
+            #if DEBUG
             modelContainer.seedScreenshotModeData()
+            #endif
         } catch {
             fatalError("Failed to create SwiftData container: \(error)")
         }
