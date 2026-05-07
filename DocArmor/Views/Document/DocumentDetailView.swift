@@ -276,7 +276,11 @@ struct DocumentDetailView: View {
         currentPageIndex = 0
 
         do {
-            let key   = try VaultKey.load()
+            // Screenshot mode seeds pages with a fixed mock key (0x42 × 32).
+            // VaultKey.load() would return the real keychain key → wrong key → decrypt fails → button stays disabled.
+            let key: SymmetricKey = CommandLine.arguments.contains("--screenshots")
+                ? SymmetricKey(data: Data(repeating: 0x42, count: 32))
+                : try VaultKey.load()
             let pages = document.sortedPages
 
             // Decrypt all pages concurrently so a 10-page document takes
