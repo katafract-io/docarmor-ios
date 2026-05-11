@@ -616,6 +616,7 @@
 		D0C0A10C2F90000100C0FFEE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DocArmorShareExtension/DocArmorShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2218;
 				DEVELOPMENT_TEAM = 2SGGP65W6C;
@@ -645,6 +646,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = DocArmorShareExtension/DocArmorShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2218;
 				DEVELOPMENT_TEAM = 2SGGP65W6C;
