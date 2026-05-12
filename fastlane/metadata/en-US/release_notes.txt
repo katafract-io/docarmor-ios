@@ -1,0 +1,11 @@
+DocArmor 1.1.6
+
+• Smart Packs for travel, medical, roadside, school, job onboarding, and more — documents grouped by real-life situation
+• Custom packs — build your own fast-access collection with any documents you choose
+• Household roles — Adult, Child, Senior, Dependent, Pet; gap prompts respect each member's role
+• Preparedness dashboard — glanceable checklist across all scenarios showing who's missing what
+• Renewal workflows — expiring documents grouped by urgency with clear next steps
+• Improved scan quality guidance — detects blur, glare, and likely missing back sides
+• Security status dashboard — backup, biometric lock, and local-only trust signals in one view
+• Emergency lock-screen card — blood type, allergies, and emergency contacts for first responders
+• Performance and stability improvements

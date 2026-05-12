@@ -1,0 +1,32 @@
+DocArmor keeps your most important documents encrypted on your device — passports, insurance cards, driver's licenses, medical records, and anything else you can't afford to lose or expose.
+
+Everything stays local. No cloud required. No account needed to get started.
+
+ALWAYS READY WHEN YOU NEED IT
+Tap once to show your passport at a hotel desk or your insurance card at urgent care. DocArmor keeps your most-used documents one tap away, organized by scenario so you're never digging through folders under pressure.
+
+ENCRYPTED VAULT
+Every document is protected by AES-256 encryption with a key that never leaves your device. DocArmor cannot read your documents. Nobody can.
+
+HOUSEHOLD READY
+Organize documents for your whole family — spouse, kids, elderly parents, even pets. Each person gets their own section. Gaps are surfaced automatically so you know who's missing what before you need it.
+
+SMART PACKS FOR REAL SITUATIONS
+Travel, medical visits, job onboarding, roadside emergencies, school enrollment, insurance claims — DocArmor groups the right documents together for each situation. Add your own custom packs for anything we missed.
+
+RENEWAL REMINDERS
+Passport expiring in 60 days. Vehicle registration due next month. DocArmor tracks expiration dates and notifies you before it's too late — for every document, for every family member.
+
+SCAN ANYTHING
+Import documents with your camera using the built-in scanner. Supports multi-page documents, both sides of cards, and automatic quality detection for blurry or glare-affected scans.
+
+SECURE SHARING
+Share a document with a trusted contact with redaction controls — front-only, back-only, or watermarked. Nothing permanent leaves your vault without your explicit choice.
+
+EMERGENCY CARD
+Opt in to a lock-screen emergency card with your blood type, allergies, and emergency contacts — visible to first responders without unlocking your vault.
+
+SOVEREIGN CLOUD BACKUP (optional)
+Katafract Sovereign subscribers can back up encrypted document metadata to their private Vaultyx vault. Image pages stay on-device. The server never sees your key.
+
+DocArmor is built by Katafract LLC, a privacy-first software company. Your data belongs to you.
