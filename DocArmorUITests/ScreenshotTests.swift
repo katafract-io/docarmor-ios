@@ -97,7 +97,7 @@ class ScreenshotTests: XCTestCase {
     func testImportScan() {
         // --show-scanner opens the AddDocumentView sheet with scanner displayed on launch
         _ = launch(flags: defaultFlags + ["--show-scanner"])
-        sleep(3)
+        sleep(4)
         snapshot("08-import-scan")
     }
 

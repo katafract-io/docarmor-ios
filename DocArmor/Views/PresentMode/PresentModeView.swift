@@ -76,6 +76,7 @@ private struct PresentModeBody: View {
                 .tabViewStyle(.page(indexDisplayMode: images.count > 1 ? .always : .never))
                 .ignoresSafeArea()
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Dismiss button (top trailing)
             VStack {

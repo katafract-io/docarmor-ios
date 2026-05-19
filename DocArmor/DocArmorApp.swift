@@ -149,7 +149,10 @@ struct DocArmorApp: App {
                 .onAppear {
                     wireAutoOpenIfNeeded()
                 }
-                .alert("Encryption Key Lost", isPresented: $keyLostWithDocuments) {
+                .alert("Encryption Key Lost", isPresented: Binding(
+                    get: { keyLostWithDocuments && !ScreenshotMode.isEnabled },
+                    set: { keyLostWithDocuments = $0 }
+                )) {
                     Button("Reset Vault", role: .destructive) {
                         // Delete all documents and clear the flag
                         Task { @MainActor in

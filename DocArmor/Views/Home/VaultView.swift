@@ -664,7 +664,9 @@ struct VaultView: View {
             .onAppear {
                 // Open scanner sheet if --show-scanner flag was passed (for screenshot)
                 if ScreenshotLaunchArgs.showScanner {
-                    showingAddDocument = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        showingAddDocument = true
+                    }
                 }
             }
             .onChange(of: packVisibilitySignature) { _, _ in
