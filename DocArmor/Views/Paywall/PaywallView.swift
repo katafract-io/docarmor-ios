@@ -120,7 +120,7 @@ struct PaywallView: View {
                             .foregroundStyle(Color.white.opacity(0.55))
                     }
 
-                    Text("Sovereign is a subscription sold in the Vaultyx app that automatically renews at $18/month or $144/year unless cancelled at least 24 hours before the renewal date. Manage or cancel in App Store > Subscriptions.")
+                    Text("Sovereign is a subscription sold in the Vaultyx app. See Vaultyx for current pricing and renewal terms. Manage or cancel anytime in App Store › Subscriptions.")
                         .font(.caption2)
                         .foregroundStyle(Color.white.opacity(0.38))
                         .multilineTextAlignment(.center)
@@ -217,7 +217,7 @@ struct PaywallView: View {
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .background(Color.kataChampagne, in: Capsule())
                     }
-                    Text("$18/mo or $144/yr · bundled with Vaultyx")
+                    Text("Included with Katafract Sovereign · subscribe in Vaultyx")
                         .font(.caption)
                         .foregroundStyle(Color.white.opacity(0.7))
                 }
