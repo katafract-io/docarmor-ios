@@ -98,6 +98,13 @@ private struct PresentModeBody: View {
                     }
                 }
                 Spacer()
+
+                Text("A stored copy for your reference — not a legal substitute for your physical passport or ID for travel or immigration.")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
             }
         }
         .statusBarHidden(true)
