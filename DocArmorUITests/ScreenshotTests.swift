@@ -14,7 +14,7 @@ class ScreenshotTests: XCTestCase {
         // unfiltered seeded vault is representative for now.
         _ = launch(flags: defaultFlags)
         sleep(3)
-        snapshot("01-vault-filtered")
+        capture("01-vault-filtered")
     }
 
     // MARK: - Frame 02: Document detail with expiration warning
@@ -22,7 +22,7 @@ class ScreenshotTests: XCTestCase {
     func testDocumentDetailExpiring() {
         _ = launch(flags: defaultFlags + ["--auto-open", "insuranceAuto"])
         sleep(3)
-        snapshot("02-detail-expiring")
+        capture("02-detail-expiring")
     }
 
     // MARK: - Frame 03: Tap-to-share (Document Actions menu expanded)
@@ -39,7 +39,7 @@ class ScreenshotTests: XCTestCase {
         XCTAssertTrue(share.waitForExistence(timeout: 4), "share-button missing inside Menu")
         share.tap()
         sleep(3) // confirmation dialog animates in
-        snapshot("03-share-sheet")
+        capture("03-share-sheet")
     }
 
     // MARK: - Frame 04: Present mode (landscape full-screen)
@@ -52,7 +52,7 @@ class ScreenshotTests: XCTestCase {
                       "show-now-button never enabled (decryptedImages still empty after 10s)")
         showNow.tap()
         sleep(4) // landscape rotation + present-mode animation
-        snapshot("04-present-mode")
+        capture("04-present-mode")
     }
 
     // MARK: - Frame 05: Preparedness with household gap
@@ -65,7 +65,7 @@ class ScreenshotTests: XCTestCase {
             travelChecklist.tap()
             sleep(3)
         }
-        snapshot("05-preparedness-gap")
+        capture("05-preparedness-gap")
     }
 
     // MARK: - Frame 06: Sovereign paywall — contextual upgrade
@@ -80,7 +80,7 @@ class ScreenshotTests: XCTestCase {
                       "show-now-button never enabled in unsubscribed mode")
         showNow.tap()
         sleep(3) // paywall sheet animates in
-        snapshot("06-paywall")
+        capture("06-paywall")
     }
 
     // MARK: - Frame 07: Lock screen / biometric gate
@@ -89,7 +89,7 @@ class ScreenshotTests: XCTestCase {
         // --mock-locked prevents auto-authentication on launch, keeping vault locked
         _ = launch(flags: defaultFlags + ["--mock-locked"])
         sleep(2)
-        snapshot("07-lock-screen")
+        capture("07-lock-screen")
     }
 
     // MARK: - Frame 08: Import/scan flow — document scanner open
@@ -98,13 +98,25 @@ class ScreenshotTests: XCTestCase {
         // --show-scanner opens the AddDocumentView sheet with scanner displayed on launch
         _ = launch(flags: defaultFlags + ["--show-scanner"])
         sleep(4)
-        snapshot("08-import-scan")
+        capture("08-import-scan")
     }
 
     // MARK: - Helpers
 
     private var defaultFlags: [String] {
         ["--screenshots", "--skip-onboarding", "--mock-subscribed", "--seed-data", "full-vault"]
+    }
+
+    /// Persist a capture into the result bundle. fastlane `snapshot()` writes
+    /// nothing under a raw `xcodebuild test` run, so attach with `.keepAlways`
+    /// and export from the .xcresult afterward.
+    private func capture(_ name: String) {
+        let shot = XCUIScreen.main.screenshot()
+        let att = XCTAttachment(screenshot: shot)
+        att.name = name
+        att.lifetime = .keepAlways
+        add(att)
+        snapshot(name)
     }
 
     private func launch(flags: [String]) -> XCUIApplication {
