@@ -134,7 +134,7 @@ struct DocArmorApp: App {
                 .task {
                     entitlementService.startListening()
                     // Check backup nag: show once if user has documents and never exported
-                    if !hasExportedBackup {
+                    if !hasExportedBackup && !ScreenshotMode.isEnabled {
                         let daysSinceNag = (Date.now.timeIntervalSince1970 - backupNagShownDate) / 86400
                         if daysSinceNag > 7 {
                             let ctx = modelContainer.mainContext

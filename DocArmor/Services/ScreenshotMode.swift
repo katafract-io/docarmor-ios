@@ -28,14 +28,14 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Driver License - California",
-                ownerName: "Christian",
+                name: "Driver License - Cascadia",
+                ownerName: "Joe Sasquatch",
                 documentType: .driversLicense,
                 category: .identity,
                 notes: "Primary ID, expires in 1 year",
-                issuerName: "Sample State DMV",
+                issuerName: "Cascadia DMV",
                 identifierSuffix: "D1234567",
-                ocrSuggestedIssuerName: "Sample State DMV",
+                ocrSuggestedIssuerName: "Cascadia DMV",
                 ocrSuggestedIdentifier: "D1234567",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 365 * 86400),
                 ocrConfidenceScore: 0.98,
@@ -50,14 +50,14 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Passport - United States",
-                ownerName: "Christian",
+                name: "Passport - Cascadia",
+                ownerName: "Joe Sasquatch",
                 documentType: .passport,
                 category: .travel,
                 notes: "Valid for international travel",
-                issuerName: "U.S. Department of State",
+                issuerName: "Cascadia Passport Office",
                 identifierSuffix: "C02840293",
-                ocrSuggestedIssuerName: "U.S. Department of State",
+                ocrSuggestedIssuerName: "Cascadia Passport Office",
                 ocrSuggestedIdentifier: "C02840293",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 5 * 365 * 86400),
                 ocrConfidenceScore: 0.95,
@@ -72,21 +72,21 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Auto Insurance - 2021 Tesla Model 3",
-                ownerName: "Christian",
+                name: "Auto Insurance - 1989 Bronco",
+                ownerName: "Joe Sasquatch",
                 documentType: .insuranceAuto,
                 category: .financial,
                 notes: "Full coverage active",
-                issuerName: "Acme Mutual",
+                issuerName: "Cascadia Mutual",
                 identifierSuffix: "AC-987654",
-                ocrSuggestedIssuerName: "Acme Mutual",
+                ocrSuggestedIssuerName: "Cascadia Mutual",
                 ocrSuggestedIdentifier: "AC-987654",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 12 * 86400),
                 ocrConfidenceScore: 0.93,
                 ocrExtractedAt: Date(timeIntervalSinceNow: -1800),
                 ocrStructureHintsRaw: ["policy_number", "expiration", "vehicle"],
                 lastVerifiedAt: Date(timeIntervalSinceNow: -604800),
-                renewalNotes: "Auto-renew on the 30th — Acme Mutual policy AC-987654, $1,247 / 6 mo",
+                renewalNotes: "Auto-renew on the 30th — Cascadia Mutual policy AC-987654, $1,247 / 6 mo",
                 expirationDate: Date(timeIntervalSinceNow: 12 * 86400), // ~12 days, urgent visual reminder
                 expirationReminderDays: [14, 7, 3],
                 isFavorite: false
@@ -94,14 +94,14 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Health Insurance - Sample Health Plan",
-                ownerName: "Christian",
+                name: "Health Insurance - Cascadia Health",
+                ownerName: "Joe Sasquatch",
                 documentType: .insuranceHealth,
                 category: .medical,
                 notes: "Active employee plan",
-                issuerName: "Sample Health Plan",
+                issuerName: "Cascadia Health",
                 identifierSuffix: "SHP-8372",
-                ocrSuggestedIssuerName: "Sample Health Plan",
+                ocrSuggestedIssuerName: "Cascadia Health",
                 ocrSuggestedIdentifier: "SHP-8372",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 365 * 86400),
                 ocrConfidenceScore: 0.96,
@@ -116,14 +116,14 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Employee ID - SampleCorp",
-                ownerName: "Christian",
+                name: "Employee ID - Cascadia Forestry",
+                ownerName: "Joe Sasquatch",
                 documentType: .employeeID,
                 category: .work,
                 notes: "Valid company badge",
-                issuerName: "SampleCorp Inc.",
+                issuerName: "Cascadia Forestry Co.",
                 identifierSuffix: "SC-47829",
-                ocrSuggestedIssuerName: "SampleCorp Inc.",
+                ocrSuggestedIssuerName: "Cascadia Forestry Co.",
                 ocrSuggestedIdentifier: "SC-47829",
                 ocrSuggestedExpirationDate: nil,
                 ocrConfidenceScore: 0.97,
@@ -142,14 +142,14 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Driver License - California",
-                ownerName: "Jane",
+                name: "Driver License - Cascadia",
+                ownerName: "Jane Sasquatch",
                 documentType: .driversLicense,
                 category: .identity,
                 notes: "Valid CA license",
-                issuerName: "Sample State DMV",
+                issuerName: "Cascadia DMV",
                 identifierSuffix: "D9876543",
-                ocrSuggestedIssuerName: "Sample State DMV",
+                ocrSuggestedIssuerName: "Cascadia DMV",
                 ocrSuggestedIdentifier: "D9876543",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 2 * 365 * 86400),
                 ocrConfidenceScore: 0.97,
@@ -165,13 +165,13 @@ public class ScreenshotMode {
             Document(
                 id: UUID(),
                 name: "Vaccine Record - COVID-19",
-                ownerName: "Jane",
+                ownerName: "Jane Sasquatch",
                 documentType: .vaccineRecord,
                 category: .medical,
                 notes: "Booster completed 2024",
-                issuerName: "Sample Health Dept.",
+                issuerName: "Cascadia Health Dept.",
                 identifierSuffix: "VACC-Jane-2024",
-                ocrSuggestedIssuerName: "Sample Health Dept.",
+                ocrSuggestedIssuerName: "Cascadia Health Dept.",
                 ocrSuggestedIdentifier: "VACC-Jane-2024",
                 ocrSuggestedExpirationDate: nil,
                 ocrConfidenceScore: 0.91,
@@ -186,14 +186,14 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Health Insurance - Sample Health Plan",
-                ownerName: "Jane",
+                name: "Health Insurance - Cascadia Health",
+                ownerName: "Jane Sasquatch",
                 documentType: .insuranceHealth,
                 category: .medical,
                 notes: "Dependent on family plan",
-                issuerName: "Sample Health Plan",
+                issuerName: "Cascadia Health",
                 identifierSuffix: "SHP-8372-D1",
-                ocrSuggestedIssuerName: "Sample Health Plan",
+                ocrSuggestedIssuerName: "Cascadia Health",
                 ocrSuggestedIdentifier: "SHP-8372-D1",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 365 * 86400),
                 ocrConfidenceScore: 0.96,
@@ -202,6 +202,52 @@ public class ScreenshotMode {
                 lastVerifiedAt: Date(timeIntervalSinceNow: -432000),
                 renewalNotes: "Covered until 2027-01-01",
                 expirationDate: Date(timeIntervalSinceNow: 365 * 86400),
+                expirationReminderDays: nil,
+                isFavorite: false
+            ),
+
+            // MARK: - Sam (child household member)
+            // Has: school student ID, vaccine record (up to date)
+
+            Document(
+                id: UUID(),
+                name: "Student ID - Cascadia Elementary",
+                ownerName: "Sam Sasquatch",
+                documentType: .custom,
+                category: .identity,
+                notes: "Grade 3 student ID card",
+                issuerName: "Cascadia Elementary",
+                identifierSuffix: "CE-2031",
+                ocrSuggestedIssuerName: "Cascadia Elementary",
+                ocrSuggestedIdentifier: "CE-2031",
+                ocrConfidenceScore: 0.90,
+                ocrExtractedAt: Date(timeIntervalSinceNow: -6000),
+                ocrStructureHintsRaw: ["student_number", "grade"],
+                lastVerifiedAt: Date(timeIntervalSinceNow: -172800),
+                renewalNotes: "Reissued each school year",
+                expirationDate: nil,
+                expirationReminderDays: nil,
+                isFavorite: false
+            ),
+
+            Document(
+                id: UUID(),
+                name: "Vaccine Record - Cascadia Elementary",
+                ownerName: "Sam Sasquatch",
+                documentType: .vaccineRecord,
+                category: .medical,
+                notes: "School immunizations up to date",
+                issuerName: "Cascadia Health Dept.",
+                identifierSuffix: "VACC-Sam-2025",
+                ocrSuggestedIssuerName: "Cascadia Health Dept.",
+                ocrSuggestedIdentifier: "VACC-Sam-2025",
+                ocrSuggestedExpirationDate: nil,
+                ocrConfidenceScore: 0.91,
+                ocrExtractedAt: Date(timeIntervalSinceNow: -9000),
+                ocrStructureHintsRaw: ["vaccine_type", "date_administered"],
+                lastVerifiedAt: Date(timeIntervalSinceNow: -86400),
+                renewalNotes: "Next dose per school schedule",
+                expirationDate: nil,
                 expirationReminderDays: nil,
                 isFavorite: false
             ),
@@ -216,9 +262,9 @@ public class ScreenshotMode {
                 documentType: .professionalLicense,
                 category: .work,
                 notes: "Active real estate broker license",
-                issuerName: "Sample State Real Estate Board",
+                issuerName: "Cascadia Real Estate Board",
                 identifierSuffix: "REB-47382",
-                ocrSuggestedIssuerName: "Sample State Real Estate Board",
+                ocrSuggestedIssuerName: "Cascadia Real Estate Board",
                 ocrSuggestedIdentifier: "REB-47382",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 180 * 86400),
                 ocrConfidenceScore: 0.92,
@@ -238,9 +284,9 @@ public class ScreenshotMode {
                 documentType: .custom,
                 category: .financial,
                 notes: "Current loan balance and payment details",
-                issuerName: "First National Bank",
+                issuerName: "Pine Hollow Savings",
                 identifierSuffix: "Loan-3728",
-                ocrSuggestedIssuerName: "First National Bank",
+                ocrSuggestedIssuerName: "Pine Hollow Savings",
                 ocrSuggestedIdentifier: "Loan-3728",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 30 * 365 * 86400),
                 ocrConfidenceScore: 0.94,
@@ -255,14 +301,14 @@ public class ScreenshotMode {
 
             Document(
                 id: UUID(),
-                name: "Vehicle Title - 2021 Tesla Model 3",
+                name: "Vehicle Title - 1989 Bronco",
                 ownerName: nil,
                 documentType: .custom,
                 category: .custom,
                 notes: "Clear title on file, owned outright",
-                issuerName: "Sample State DMV",
+                issuerName: "Cascadia DMV",
                 identifierSuffix: "Title-4KL9Z3TQ",
-                ocrSuggestedIssuerName: "Sample State DMV",
+                ocrSuggestedIssuerName: "Cascadia DMV",
                 ocrSuggestedIdentifier: "4KL9Z3TQ",
                 ocrConfidenceScore: 0.90,
                 ocrExtractedAt: Date(timeIntervalSinceNow: -21600),
@@ -303,9 +349,9 @@ public class ScreenshotMode {
                 documentType: .insuranceHome,
                 category: .financial,
                 notes: "Full replacement value coverage",
-                issuerName: "Acme Mutual",
+                issuerName: "Cascadia Mutual",
                 identifierSuffix: "HO-392857",
-                ocrSuggestedIssuerName: "Acme Mutual",
+                ocrSuggestedIssuerName: "Cascadia Mutual",
                 ocrSuggestedIdentifier: "HO-392857",
                 ocrSuggestedExpirationDate: Date(timeIntervalSinceNow: 365 * 86400),
                 ocrConfidenceScore: 0.94,
@@ -325,19 +371,34 @@ public class ScreenshotMode {
             // Return only first 3 documents for minimal vault display
             Array(allDocuments.prefix(3))
         case "preparedness", "full-vault":
-            // Return all 14 documents; "preparedness" needs the gaps to show
+            // Return all documents (3-member Sasquatch household); "preparedness" needs the gaps to show
             allDocuments
         default:
             allDocuments
         }
 
+        // --auto-open selects the first match in createdAt-desc order. Bump Joe's
+        // licence + auto-insurance to a fresh timestamp so the auto-opened document
+        // is always the one that has a mock page image attached (not Jane's ID).
+        for document in result where document.ownerName == "Joe Sasquatch"
+            && (document.documentType == .driversLicense || document.documentType == .insuranceAuto) {
+            document.createdAt = Date.now
+        }
+
         // Populate encrypted pages for documents that need preview rendering
         // (driversLicense + insuranceAuto for Frames 3-4)
-        for document in result {
-            if document.documentType == .driversLicense && document.pages.isEmpty {
+        for document in result where document.pages.isEmpty {
+            switch (document.ownerName ?? "", document.documentType) {
+            case ("Joe Sasquatch", .driversLicense):
                 attachMockPage(to: document, image: ScreenshotMockImageFactory.driverLicenseImage())
-            } else if document.documentType == .insuranceAuto && document.pages.isEmpty {
+            case ("Joe Sasquatch", .insuranceAuto):
                 attachMockPage(to: document, image: ScreenshotMockImageFactory.autoInsuranceImage())
+            case ("Joe Sasquatch", .passport):
+                attachMockPage(to: document, image: ScreenshotMockImageFactory.passportImage())
+            case ("Sam Sasquatch", .custom) where document.name.contains("Student ID"):
+                attachMockPage(to: document, image: ScreenshotMockImageFactory.studentIDImage())
+            default:
+                break
             }
         }
 
