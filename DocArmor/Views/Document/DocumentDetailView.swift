@@ -13,6 +13,7 @@ struct DocumentDetailView: View {
     @State private var currentPageIndex = 0
     @State private var isLoading: Bool
     @State private var decryptError: String?
+    @State private var isDecrypting = false
 
     init(document: Document) {
         self.document = document
@@ -156,11 +157,17 @@ struct DocumentDetailView: View {
                 .accessibilityIdentifier("document-actions-menu")
             }
         }
-        .task {
+        .task(id: document.persistentModelID) {
             await decryptPages()
         }
         .onAppear {
             updateCaptureState()
+            // Safety net for the blank-on-first-open bug: if a navigation
+            // re-render dropped the initial decrypt task, re-kick it so the
+            // page never stays stuck on the empty placeholder.
+            if decryptedImages.isEmpty && !isLoading && !isDecrypting && decryptError == nil {
+                Task { await decryptPages() }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIScreen.capturedDidChangeNotification)) { _ in
             updateCaptureState()
@@ -272,6 +279,11 @@ struct DocumentDetailView: View {
     // MARK: - Decrypt
 
     private func decryptPages() async {
+        // Re-entrancy guard: the .task and the onAppear safety net can both
+        // fire; never run two decrypts concurrently.
+        guard !isDecrypting else { return }
+        isDecrypting = true
+        defer { isDecrypting = false }
         isLoading = true
         decryptError = nil
         currentPageIndex = 0
