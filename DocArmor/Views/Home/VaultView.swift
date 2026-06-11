@@ -61,6 +61,7 @@ struct VaultView: View {
     @State private var quickPresentImages: [UIImage] = []
     @State private var quickPresentDocumentName = ""
     @State private var pendingImportCount = ImportInboxService.pendingCount()
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("smartPack.travelEnabled") private var travelPackEnabled = true
     @AppStorage("smartPack.vehicleEnabled") private var vehiclePackEnabled = true
     @AppStorage("smartPack.familyEnabled") private var familyPackEnabled = true
@@ -558,6 +559,9 @@ struct VaultView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
+                if pendingImportCount > 0 {
+                    importInboxBanner
+                }
                 if !allDocuments.isEmpty {
                     statsBanner
                     filterBar
@@ -581,6 +585,11 @@ struct VaultView: View {
                 DocumentDetailView(document: document)
             }
             .searchable(text: $searchText, prompt: "Search documents")
+            .onChange(of: scenePhase) { _, newPhase in
+                // A file shared into DocArmor lands in the inbox while the app is
+                // backgrounded — refresh the pending count on return so the banner appears.
+                if newPhase == .active { refreshImportInboxCount() }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: {
@@ -680,6 +689,39 @@ struct VaultView: View {
 
     private func refreshImportInboxCount() {
         pendingImportCount = ImportInboxService.pendingCount()
+    }
+
+    // Prominent home-screen prompt for files shared into DocArmor (the toolbar
+    // "Inbox" button alone is easy to miss). Tapping opens the import inbox.
+    private var importInboxBanner: some View {
+        Button {
+            refreshImportInboxCount()
+            showingImportInbox = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "tray.and.arrow.down.fill")
+                    .font(.title3)
+                    .foregroundStyle(Color.kataChampagne)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(pendingImportCount) file\(pendingImportCount == 1 ? "" : "s") ready to import")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Shared into DocArmor — tap to review")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.kataChampagne.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
     }
 
     private var captureOverlay: some View {
