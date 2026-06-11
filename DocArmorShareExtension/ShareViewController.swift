@@ -239,7 +239,9 @@ final class ShareViewController: UIViewController {
     }
 
     private func cleanupStaleInboxItems() {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.katafract.enclave") else {
+        // Must match the App Group importFolderURL() writes to, else the real
+        // inbox is never cleaned (was "group.com.katafract.enclave").
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.katafract.DocArmor") else {
             return
         }
         let inboxURL = containerURL.appendingPathComponent("ImportInbox", isDirectory: true)
