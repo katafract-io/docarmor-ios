@@ -46,6 +46,7 @@ struct VaultView: View {
     }
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(EntitlementService.self) private var entitlementService
     @Query(sort: \Document.createdAt, order: .reverse) private var allDocuments: [Document]
 
     @State private var searchText = ""
@@ -85,6 +86,12 @@ struct VaultView: View {
     @AppStorage("preparedness.ignoredGaps") private var ignoredGapsRaw: String = ""
 
     @State private var selectedRenewalWorkflow: RenewalWorkflowItem?
+
+    // FIX 1: Paywall for Present Mode gated at the showNow entry point
+    @State private var showingPresentModePaywall = false
+    // FIX 2: Swipe-to-delete confirmation state
+    @State private var pendingDeleteDocuments: [Document] = []
+    @State private var showingDeleteConfirmation = false
 
     var pendingDocumentType: Binding<DocumentType?>
     var pendingCategory: Binding<DocumentCategory?>
@@ -638,6 +645,35 @@ struct VaultView: View {
                     images: quickPresentImages,
                     documentName: quickPresentDocumentName
                 )
+            }
+            .sheet(isPresented: $showingPresentModePaywall) {
+                PaywallView(
+                    reason: .presentMode,
+                    entitlementService: entitlementService,
+                    dismiss: { showingPresentModePaywall = false }
+                )
+            }
+            .confirmationDialog(
+                "Delete \(pendingDeleteDocuments.count == 1 ? "\"\(pendingDeleteDocuments.first?.name ?? "document")\"" : "\(pendingDeleteDocuments.count) documents")?",
+                isPresented: $showingDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    for doc in pendingDeleteDocuments {
+                        ExpirationService.cancelReminder(for: doc)
+                        let deletedID = doc.id
+                        Task.detached(priority: .background) {
+                            await SovereignBackupService.deleteRemote(documentId: deletedID)
+                        }
+                        modelContext.delete(doc)
+                    }
+                    pendingDeleteDocuments = []
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingDeleteDocuments = []
+                }
+            } message: {
+                Text("This is permanent and cannot be undone.")
             }
             .onChange(of: pendingDocumentType.wrappedValue) { _, type in
                 guard let type else { return }
@@ -1436,7 +1472,8 @@ struct VaultView: View {
                             }
                     }
                     .onDelete { indexSet in
-                        deleteDocuments(from: favorites, at: indexSet)
+                        pendingDeleteDocuments = indexSet.map { favorites[$0] }
+                        showingDeleteConfirmation = true
                     }
                 } header: {
                     Label("Favorites", systemImage: "star.fill")
@@ -1456,7 +1493,8 @@ struct VaultView: View {
                             }
                     }
                     .onDelete { indexSet in
-                        deleteDocuments(from: docs, at: indexSet)
+                        pendingDeleteDocuments = indexSet.map { docs[$0] }
+                        showingDeleteConfirmation = true
                     }
                 } header: {
                     CategoryHeader(category: category)
@@ -1580,13 +1618,13 @@ struct VaultView: View {
         case .vehicle:
             return vehiclePackEnabled
         case .family:
-            return familyPackEnabled
+            return entitlementService.hasFamilyVault && familyPackEnabled
         case .medical:
             return medicalPackEnabled
         case .work:
             return workPackEnabled
         case .custom:
-            return !enabledCustomPacks.isEmpty
+            return entitlementService.canUseCustomPacks && !enabledCustomPacks.isEmpty
         case .attention:
             return renewalPackEnabled
         }
@@ -2037,6 +2075,10 @@ struct VaultView: View {
 
     @MainActor
     private func showNow(_ document: Document) async {
+        guard entitlementService.canUsePresentMode else {
+            showingPresentModePaywall = true
+            return
+        }
         guard !document.sortedPages.isEmpty else { return }
 
         do {
@@ -2431,12 +2473,9 @@ private struct RenewalWorkflowSheet: View {
                 guard let days = doc.daysUntilExpiry else { return false }
                 return !doc.isExpired && days <= 30 && days > 0
             case "Finish Setup":
-                // TODO: Document.isIncomplete property doesn't exist yet — stub to false
-                // so this workflow card shows no docs rather than compile-failing the build.
-                return false
+                return doc.isMissingRequiredPages
             case "Verify":
-                // TODO: Document.requiresReview property doesn't exist yet — same as above.
-                return false
+                return doc.needsVerificationReview
             default:
                 return false
             }

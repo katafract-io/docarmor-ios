@@ -121,6 +121,14 @@ struct SettingsView: View {
     @State private var vaultKeyExists: Bool = false
     @AppStorage("sovereignBackup.enabled") private var sovereignBackupEnabled = true
     @State private var hasLoadedInitialState = false
+    // Cloud (Vaultyx) backup restore + usage
+    @State private var showingCloudRestoreConfirm = false
+    @State private var isCloudRestoring = false
+    @State private var cloudRestoreProgress: (completed: Int, total: Int)?
+    @State private var cloudRestoreResult: String?
+    @State private var vaultUsage: SovereignBackupService.Usage?
+    // Paywall upsell for premium-gated Settings features
+    @State private var activePaywallReason: PaywallReason?
     @FocusState private var focusedField: FocusedField?
 
     // Cached derived state — recomputed only when inputs change, not on every render
@@ -170,9 +178,43 @@ struct SettingsView: View {
                 if entitlementService.hasCloudBackup {
                     Section("Cloud Backup (Sovereign)") {
                         Toggle(isOn: $sovereignBackupEnabled) {
-                            Label("Back up vault index to Vaultyx", systemImage: "icloud.and.arrow.up.fill")
+                            Label("Back up documents to Vaultyx", systemImage: "icloud.and.arrow.up.fill")
                         }
-                        Text("When enabled, document metadata is encrypted with your local vault key and backed up to your 1 TB Vaultyx storage. Image pages stay on-device.")
+                        Text("When enabled, your full documents — page images and all — are encrypted with your on-device vault key and backed up to your Vaultyx storage. The server never sees plaintext.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            showingCloudRestoreConfirm = true
+                        } label: {
+                            Label("Restore from Vaultyx", systemImage: "icloud.and.arrow.down.fill")
+                        }
+                        .disabled(isCloudRestoring)
+
+                        if isCloudRestoring {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                if let p = cloudRestoreProgress, p.total > 0 {
+                                    Text("Restoring \(p.completed) of \(p.total)…")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text("Contacting Vaultyx…")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+
+                        if let usage = vaultUsage {
+                            statusRow(
+                                title: "Vaultyx Storage",
+                                systemImage: "externaldrive.fill",
+                                value: "\(byteString(usage.usedBytes)) of \(byteString(usage.quotaBytes))"
+                            )
+                        }
+
+                        Text("Restore re-downloads and decrypts your backups onto this device. To move documents to a new device, use an Encrypted Backup file below — your vault key never leaves this device.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -229,30 +271,38 @@ struct SettingsView: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        TextField("Add family member", text: $newMemberName)
-                            .autocorrectionDisabled()
-                            .focused($focusedField, equals: .newMemberName)
+                    if entitlementService.canManageHousehold {
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Add family member", text: $newMemberName)
+                                .autocorrectionDisabled()
+                                .focused($focusedField, equals: .newMemberName)
 
-                        Picker("New member role", selection: $newMemberRole) {
-                            ForEach(HouseholdRole.allCases) { role in
-                                Text(role.displayName).tag(role)
+                            Picker("New member role", selection: $newMemberRole) {
+                                ForEach(HouseholdRole.allCases) { role in
+                                    Text(role.displayName).tag(role)
+                                }
                             }
-                        }
-                        .pickerStyle(.menu)
+                            .pickerStyle(.menu)
 
-                        Button("Add") {
-                            addHouseholdMember()
-                            newMemberName = ""
-                            newMemberRole = .adult
-                            focusedField = nil
+                            Button("Add") {
+                                addHouseholdMember()
+                                newMemberName = ""
+                                newMemberRole = .adult
+                                focusedField = nil
+                            }
+                            .disabled(HouseholdStore.normalize(newMemberName) == nil)
                         }
-                        .disabled(HouseholdStore.normalize(newMemberName) == nil)
+
+                        Label("Documents can also stay shared for the whole household.", systemImage: "person.2.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Button {
+                            activePaywallReason = .household
+                        } label: {
+                            Label("Unlock Household to add family members", systemImage: "lock.fill")
+                        }
                     }
-
-                    Label("Documents can also stay shared for the whole household.", systemImage: "person.2.fill")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 Section("Security Status") {
@@ -448,10 +498,18 @@ struct SettingsView: View {
                         }
                     }
 
-                    Button {
-                        addCustomPack()
-                    } label: {
-                        Label("Add Custom Pack", systemImage: "plus.circle.fill")
+                    if entitlementService.canUseCustomPacks {
+                        Button {
+                            addCustomPack()
+                        } label: {
+                            Label("Add Custom Pack", systemImage: "plus.circle.fill")
+                        }
+                    } else {
+                        Button {
+                            activePaywallReason = .smartPacks
+                        } label: {
+                            Label("Unlock to create Custom Packs", systemImage: "lock.fill")
+                        }
                     }
                 }
 
@@ -656,6 +714,24 @@ struct SettingsView: View {
             } message: {
                 Text(backupSuccessMessage ?? "Done.")
             }
+            .confirmationDialog("Restore from Vaultyx?", isPresented: $showingCloudRestoreConfirm, titleVisibility: .visible) {
+                Button("Restore") {
+                    Task { await runCloudRestore() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Downloads your encrypted documents from Vaultyx and adds any that aren't already on this device. Existing documents are never overwritten or deleted.")
+            }
+            .alert("Cloud Restore", isPresented: cloudRestoreResultBinding) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(cloudRestoreResult ?? "Done.")
+            }
+            .sheet(item: $activePaywallReason) { reason in
+                PaywallView(reason: reason, entitlementService: entitlementService) {
+                    activePaywallReason = nil
+                }
+            }
             .task {
                 guard !hasLoadedInitialState else { return }
                 hasLoadedInitialState = true
@@ -689,6 +765,10 @@ struct SettingsView: View {
                 let (key, model) = await (keyExists, modelStatus)
                 vaultKeyExists = key
                 foundationModelStatus = model
+
+                if entitlementService.hasCloudBackup {
+                    vaultUsage = await SovereignBackupService.fetchUsage()
+                }
             }
             .onChange(of: allDocuments) { refreshDerivedState() }
             .onChange(of: householdProfiles) { refreshDerivedState() }
@@ -712,11 +792,52 @@ struct SettingsView: View {
         cachedRemindersCount = allDocuments.filter { !($0.expirationReminderDays ?? []).isEmpty }.count
     }
 
+    // MARK: - Cloud (Vaultyx) restore
+
+    private var cloudRestoreResultBinding: Binding<Bool> {
+        Binding(
+            get: { cloudRestoreResult != nil },
+            set: { if !$0 { cloudRestoreResult = nil } }
+        )
+    }
+
+    @MainActor
+    private func runCloudRestore() async {
+        isCloudRestoring = true
+        cloudRestoreProgress = nil
+        defer { isCloudRestoring = false; cloudRestoreProgress = nil }
+        do {
+            let summary = try await SovereignBackupService.restoreAll(into: modelContext) { completed, total in
+                cloudRestoreProgress = (completed, total)
+            }
+            refreshDerivedState()
+            vaultKeyExists = VaultKey.exists
+            if summary.total == 0 {
+                cloudRestoreResult = "No cloud backups found in your Vaultyx storage."
+            } else if summary.failed > 0 {
+                cloudRestoreResult = "Restored \(summary.restored). Skipped \(summary.skipped) already on this device. \(summary.failed) couldn't be decrypted on this device — those were backed up from a different device; use an Encrypted Backup file to move them."
+            } else {
+                cloudRestoreResult = "Restored \(summary.restored) document\(summary.restored == 1 ? "" : "s"). Skipped \(summary.skipped) already on this device."
+            }
+        } catch {
+            cloudRestoreResult = error.localizedDescription
+        }
+    }
+
+    private func byteString(_ bytes: Int) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+
     // MARK: - Reset Vault
 
     private func resetVault() async {
         isResetting = true
         ExpirationService.cancelAllReminders()
+
+        // Purge remote Vaultyx backups BEFORE the key is destroyed. After VaultKey.delete()
+        // those chunks are undecryptable orphans that would otherwise consume the user's
+        // Vaultyx quota forever. Best-effort; the local reset proceeds regardless.
+        await SovereignBackupService.purgeAllRemote()
 
         // Delete all SwiftData records
         for doc in allDocuments {

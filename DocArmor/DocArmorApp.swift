@@ -101,6 +101,25 @@ struct DocArmorApp: App {
                         autoLockService.stopMonitoring()
                     case .active:
                         autoLockService.startMonitoring()
+                        // Retry vault key provisioning if it failed at launch (e.g. no device passcode).
+                        // The user may have set a passcode and returned — attempt once per activation.
+                        if UserDefaults.standard.bool(forKey: "vaultKeyProvisioningFailed") {
+                            Task { @MainActor in
+                                // If a key already exists (flag left stale from a partial prior run),
+                                // clear the flag and don't re-add — SecItemAdd would return
+                                // errSecDuplicateItem and loop the retry forever.
+                                if VaultKey.exists {
+                                    UserDefaults.standard.set(false, forKey: "vaultKeyProvisioningFailed")
+                                } else {
+                                    do {
+                                        try VaultKey.generate()
+                                        UserDefaults.standard.set(false, forKey: "vaultKeyProvisioningFailed")
+                                    } catch {
+                                        // Still no passcode — leave flag set; LockScreenView will explain.
+                                    }
+                                }
+                            }
+                        }
                         // Trigger auth only on .active to avoid LAError.notInteractive
                         // Skip auto-auth if --mock-locked was passed (for lock screen screenshot)
                         if authService.state == .locked && !ScreenshotLaunchArgs.mockLocked {

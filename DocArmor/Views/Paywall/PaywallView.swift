@@ -30,7 +30,7 @@ enum PaywallReason {
         case .familyVault:
             "Each person in the household gets their own organized vault, all encrypted together."
         case .cloudBackup:
-            "Back up an encrypted index of your documents to Vaultyx storage (image pages stay on-device; full sync in a future update)."
+            "Back up your full encrypted documents — including page images — to your Vaultyx storage, and restore them onto this device anytime."
         }
     }
 
@@ -38,10 +38,15 @@ enum PaywallReason {
     var isSovereignOnly: Bool { self == .cloudBackup }
 }
 
+extension PaywallReason: Identifiable {
+    var id: String { headline }
+}
+
 /// Three paths to unlock:
 ///   1. One-time DocArmor unlock IAP ($7.99) — full local features.
 ///   2. Enclave/Sovereign/Founder bundle token (via shared App Group) — full local features.
-///   3. Sovereign subscription (sold in Vaultyx) — local features + vault index backup.
+///   3. Sovereign subscription (sold in Vaultyx) — local features + full-content
+///      encrypted cloud backup and same-device restore.
 ///
 /// Cloud Backup reason shows only path #2 (Sovereign).
 struct PaywallView: View {
@@ -53,6 +58,7 @@ struct PaywallView: View {
     @State private var showingError = false
     @State private var showRestoreResult = false
     @State private var restoreResultMessage = ""
+    @State private var showAppGroupReadFailedAlert = false
 
     /// Vaultyx App Store URL — where Sovereign is sold.
     private static let vaultyxAppStoreURL = URL(string: "https://apps.apple.com/app/id6762418528")!
@@ -125,6 +131,25 @@ struct PaywallView: View {
                         .foregroundStyle(Color.white.opacity(0.38))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20)
+
+                    HStack(spacing: 12) {
+                        Link(destination: URL(string: "https://katafract.com/privacy/docarmor")!) {
+                            Text("Privacy Policy")
+                                .font(.caption2)
+                                .foregroundStyle(Color.white.opacity(0.65))
+                        }
+
+                        Divider()
+                            .frame(height: 12)
+                            .overlay(Color.white.opacity(0.25))
+
+                        Link(destination: URL(string: "https://katafract.com/terms/docarmor")!) {
+                            Text("Terms of Use")
+                                .font(.caption2)
+                                .foregroundStyle(Color.white.opacity(0.65))
+                        }
+                    }
+                    .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 20)
             }
@@ -161,7 +186,7 @@ struct PaywallView: View {
                         .foregroundStyle(Color.white.opacity(0.7))
                 }
                 Spacer()
-                Text(entitlementService.unlockProduct?.displayPrice ?? "$7.99")
+                Text(entitlementService.unlockProduct?.displayPrice ?? "—")
                     .font(.title3.bold())
                     .foregroundStyle(.white)
             }
@@ -185,7 +210,7 @@ struct PaywallView: View {
                         KataProgressRing(size: 16)
                     } else {
                         Image(systemName: "lock.open.fill")
-                        Text("Unlock for \(entitlementService.unlockProduct?.displayPrice ?? "$7.99")")
+                        Text("Unlock for \(entitlementService.unlockProduct?.displayPrice ?? "—")")
                             .font(.headline)
                     }
                 }
@@ -194,7 +219,7 @@ struct PaywallView: View {
                 .foregroundStyle(Color.kataNavy)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
             }
-            .disabled(entitlementService.isLoading)
+            .disabled(entitlementService.isLoading || entitlementService.unlockProduct == nil)
         }
         .padding(16)
         .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
@@ -226,8 +251,8 @@ struct PaywallView: View {
 
             bulletList([
                 "Everything in the one-time unlock",
-                "Encrypted cloud backup of your vault",
-                "Cross-device sync — iPhone, iPad, Mac",
+                "Full encrypted cloud backup — page images and all",
+                "Restore your documents onto this device anytime",
                 "Vaultyx 1 TB storage + Wraith VPN + Haven DNS",
             ])
 
@@ -246,16 +271,33 @@ struct PaywallView: View {
             }
 
             if !reason.isSovereignOnly {
-                Button {
-                    Task {
-                        await entitlementService.refreshEntitlements()
-                        if entitlementService.isSovereign { dismiss() }
+                VStack(spacing: 8) {
+                    Button {
+                        Task {
+                            showAppGroupReadFailedAlert = false
+                            await entitlementService.refreshEntitlements()
+                            // Any premium path (one-time unlock OR Sovereign) satisfies a
+                            // non-Sovereign-only paywall — dismiss for $7.99 IAP buyers too.
+                            if entitlementService.hasPremiumLocal {
+                                dismiss()
+                            } else if entitlementService.appGroupReadFailed {
+                                showAppGroupReadFailedAlert = true
+                            }
+                        }
+                    } label: {
+                        Text("Already subscribed? Refresh entitlement")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.85))
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
-                } label: {
-                    Text("Already subscribed? Refresh entitlement")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.white.opacity(0.85))
-                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    if showAppGroupReadFailedAlert {
+                        Text("Couldn't verify your subscription. Make sure the Enclave or Vaultyx app is installed and you're signed in, then try again.")
+                            .font(.caption2)
+                            .foregroundStyle(Color.kataChampagne.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 8)
+                    }
                 }
                 .padding(.top, 2)
             }

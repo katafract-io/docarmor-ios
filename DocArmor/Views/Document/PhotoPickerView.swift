@@ -33,6 +33,7 @@ struct PhotoPickerView: UIViewControllerRepresentable {
         }
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            // User cancelled picker or selected no images; dismiss cleanly
             guard !results.isEmpty else {
                 onCancel()
                 return

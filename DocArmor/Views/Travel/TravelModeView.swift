@@ -231,6 +231,10 @@ struct TravelModeView: View {
 
     @MainActor
     private func showNow(_ document: Document) async {
+        guard entitlementService.canUseTravelMode else {
+            showingPaywall = true
+            return
+        }
         guard !document.sortedPages.isEmpty else { return }
 
         do {

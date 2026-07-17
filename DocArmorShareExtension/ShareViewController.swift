@@ -112,8 +112,22 @@ final class ShareViewController: UIViewController {
 
     private func persistAttachments() async throws {
         let folder = try importFolderURL()
+        var imported = 0
+        var lastError: Error?
         for provider in attachmentProviders {
-            try await persist(provider: provider, into: folder)
+            do {
+                try await persist(provider: provider, into: folder)
+                imported += 1
+            } catch {
+                // Isolate per-attachment failures: one unsupported item in a mixed share
+                // must not drop the valid images/PDFs shared alongside it.
+                lastError = error
+            }
+        }
+        // Only surface an error if NOTHING imported. If at least one attachment succeeded,
+        // complete the share rather than reporting a failure over a partial success.
+        if imported == 0, let lastError {
+            throw lastError
         }
     }
 
@@ -130,23 +144,58 @@ final class ShareViewController: UIViewController {
             try await persistFileURL(provider: provider, into: folder)
             return
         }
-        try await persistFileRepresentation(provider: provider, type: .data, into: folder)
+        // Explicitly reject unsupported file types (e.g. .txt, .docx, .zip, links)
+        throw NSError(
+            domain: "DocArmorShareExtension",
+            code: 415,
+            userInfo: [NSLocalizedDescriptionKey: "This file type isn't supported. DocArmor accepts images and PDFs."]
+        )
     }
 
     private func persistImage(provider: NSItemProvider, into folder: URL) async throws {
-        let data = try await loadDataRepresentation(provider: provider, type: .image)
-        try validateFileSize(data.count)
+        let image = try await loadObject(ofClass: UIImage.self, from: provider)
+        let downsampledImage = downsampleImage(image, maxDimension: 2400, compressionQuality: 0.82)
+        guard let jpegData = downsampledImage.jpegData(compressionQuality: 0.82), !jpegData.isEmpty else {
+            throw NSError(domain: "DocArmorShareExtension", code: 3, userInfo: [NSLocalizedDescriptionKey: "Image data could not be prepared for storage."])
+        }
+        try validateFileSize(jpegData.count)
         let fileURL = folder.appendingPathComponent("share-\(UUID().uuidString).jpg")
-        try data.write(to: fileURL, options: .atomic)
+        try jpegData.write(to: fileURL, options: .atomic)
     }
 
     private func persistFileURL(provider: NSItemProvider, into folder: URL) async throws {
         let fileURL = try await loadFileURL(provider: provider)
-        let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-        let fileSize = attributes[.size] as? Int ?? 0
-        try validateFileSize(fileSize)
-        let destination = uniqueDestinationURL(in: folder, preferredName: fileURL.lastPathComponent)
-        try FileManager.default.copyItem(at: fileURL, to: destination)
+        let uti = UTType(filenameExtension: fileURL.pathExtension)
+
+        // PDF: copy through as-is.
+        if uti?.conforms(to: .pdf) == true {
+            let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+            let fileSize = attributes[.size] as? Int ?? 0
+            try validateFileSize(fileSize)
+            let destination = uniqueDestinationURL(in: folder, preferredName: fileURL.lastPathComponent)
+            try FileManager.default.copyItem(at: fileURL, to: destination)
+            return
+        }
+
+        // Image file: downsample before writing (avoid copying a 50 MB original into the inbox).
+        if uti?.conforms(to: .image) == true, let image = UIImage(contentsOfFile: fileURL.path) {
+            let downsampled = downsampleImage(image, maxDimension: 2400, compressionQuality: 0.82)
+            guard let jpegData = downsampled.jpegData(compressionQuality: 0.82), !jpegData.isEmpty else {
+                throw NSError(domain: "DocArmorShareExtension", code: 3, userInfo: [NSLocalizedDescriptionKey: "Image data could not be prepared for storage."])
+            }
+            try validateFileSize(jpegData.count)
+            let destination = folder.appendingPathComponent("share-\(UUID().uuidString).jpg")
+            try jpegData.write(to: destination, options: .atomic)
+            return
+        }
+
+        // Anything else (.docx/.zip/.txt/etc.) — reject rather than jamming the inbox with
+        // a file the app can't normalize.
+        throw NSError(
+            domain: "DocArmorShareExtension",
+            code: 415,
+            userInfo: [NSLocalizedDescriptionKey: "This file type isn't supported. DocArmor accepts images and PDFs."]
+        )
     }
 
     private func persistFileRepresentation(
@@ -188,20 +237,6 @@ final class ShareViewController: UIViewController {
                     continuation.resume(returning: url)
                 } else {
                     continuation.resume(throwing: NSError(domain: "DocArmorShareExtension", code: 2, userInfo: [NSLocalizedDescriptionKey: "File representation was unavailable."]))
-                }
-            }
-        }
-    }
-
-    private func loadDataRepresentation(provider: NSItemProvider, type: UTType) async throws -> Data {
-        try await withCheckedThrowingContinuation { continuation in
-            provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else if let data {
-                    continuation.resume(returning: data)
-                } else {
-                    continuation.resume(throwing: NSError(domain: "DocArmorShareExtension", code: 3, userInfo: [NSLocalizedDescriptionKey: "Image data was unavailable."]))
                 }
             }
         }
@@ -267,5 +302,39 @@ final class ShareViewController: UIViewController {
         let alert = UIAlertController(title: "Import Failed", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+
+    private func loadObject(ofClass cls: AnyClass, from provider: NSItemProvider) async throws -> UIImage {
+        try await withCheckedThrowingContinuation { continuation in
+            provider.loadObject(ofClass: UIImage.self) { object, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if let image = object as? UIImage {
+                    continuation.resume(returning: image)
+                } else {
+                    continuation.resume(throwing: NSError(domain: "DocArmorShareExtension", code: 3, userInfo: [NSLocalizedDescriptionKey: "Image data was unavailable."]))
+                }
+            }
+        }
+    }
+
+    private func downsampleImage(_ image: UIImage, maxDimension: CGFloat, compressionQuality: CGFloat) -> UIImage {
+        let originalSize = image.size
+        let largestSide = max(originalSize.width, originalSize.height)
+
+        if largestSide > maxDimension {
+            let scale = maxDimension / largestSide
+            let targetSize = CGSize(
+                width: max(1, floor(originalSize.width * scale)),
+                height: max(1, floor(originalSize.height * scale))
+            )
+            let format = UIGraphicsImageRendererFormat.default()
+            format.scale = 1
+            return UIGraphicsImageRenderer(size: targetSize, format: format).image { _ in
+                image.draw(in: CGRect(origin: .zero, size: targetSize))
+            }
+        }
+
+        return image
     }
 }

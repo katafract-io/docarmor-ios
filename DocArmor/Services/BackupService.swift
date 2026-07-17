@@ -116,55 +116,73 @@ enum BackupService {
         passphrase: String,
         into modelContext: ModelContext
     ) throws {
+        // Decrypt + decode the ENTIRE payload first. Any corruption/wrong-passphrase
+        // failure throws here, before a single existing record is touched.
         let payload = try decryptPayload(from: data, passphrase: passphrase)
 
         ExpirationService.cancelAllReminders()
 
-        let existingDocuments = try modelContext.fetch(FetchDescriptor<Document>())
-        for document in existingDocuments {
-            modelContext.delete(document)
-        }
-        try modelContext.save()
+        // Atomic swap: delete existing and insert restored records in ONE unsaved
+        // transaction, then a single save(). If the save throws, roll back so the
+        // current vault is left fully intact — never a half-wiped vault (the old
+        // delete-then-save-then-insert order wiped everything on a mid-insert failure).
+        var insertedDocuments: [Document] = []
+        do {
+            let existingDocuments = try modelContext.fetch(FetchDescriptor<Document>())
+            for document in existingDocuments {
+                modelContext.delete(document)
+            }
 
+            for backupDocument in payload.documents {
+                let document = Document(
+                    id: backupDocument.id,
+                    name: backupDocument.name,
+                    ownerName: backupDocument.ownerName,
+                    documentType: DocumentType(rawValue: backupDocument.documentTypeRaw) ?? .custom,
+                    category: DocumentCategory(rawValue: backupDocument.categoryRaw) ?? .identity,
+                    notes: backupDocument.notes,
+                    issuerName: backupDocument.issuerName,
+                    identifierSuffix: backupDocument.identifierSuffix,
+                    lastVerifiedAt: backupDocument.lastVerifiedAt,
+                    renewalNotes: backupDocument.renewalNotes,
+                    expirationDate: backupDocument.expirationDate,
+                    expirationReminderDays: backupDocument.expirationReminderDays,
+                    isFavorite: backupDocument.isFavorite
+                )
+                document.createdAt = backupDocument.createdAt
+                document.updatedAt = backupDocument.updatedAt
+                modelContext.insert(document)
+                insertedDocuments.append(document)
+
+                for backupPage in backupDocument.pages {
+                    let page = DocumentPage(
+                        id: backupPage.id,
+                        pageIndex: backupPage.pageIndex,
+                        encryptedImageData: backupPage.encryptedImageData,
+                        nonce: backupPage.nonce,
+                        label: backupPage.label
+                    )
+                    page.document = document
+                    modelContext.insert(page)
+                }
+            }
+
+            try modelContext.save()
+        } catch {
+            // Undo the pending delete+insert so the pre-restore vault survives intact.
+            modelContext.rollback()
+            throw error
+        }
+
+        // Model data is now committed. Install the backup's vault key so the restored
+        // page ciphertext is decryptable. If this throws, documents are present but need
+        // the key — recoverable by retry, and still not a data-loss wipe.
         try VaultKey.replace(with: payload.vaultKeyData)
         HouseholdStore.saveMembers(payload.householdMembers)
 
-        for backupDocument in payload.documents {
-            let document = Document(
-                id: backupDocument.id,
-                name: backupDocument.name,
-                ownerName: backupDocument.ownerName,
-                documentType: DocumentType(rawValue: backupDocument.documentTypeRaw) ?? .custom,
-                category: DocumentCategory(rawValue: backupDocument.categoryRaw) ?? .identity,
-                notes: backupDocument.notes,
-                issuerName: backupDocument.issuerName,
-                identifierSuffix: backupDocument.identifierSuffix,
-                lastVerifiedAt: backupDocument.lastVerifiedAt,
-                renewalNotes: backupDocument.renewalNotes,
-                expirationDate: backupDocument.expirationDate,
-                expirationReminderDays: backupDocument.expirationReminderDays,
-                isFavorite: backupDocument.isFavorite
-            )
-            document.createdAt = backupDocument.createdAt
-            document.updatedAt = backupDocument.updatedAt
-            modelContext.insert(document)
-
-            for backupPage in backupDocument.pages {
-                let page = DocumentPage(
-                    id: backupPage.id,
-                    pageIndex: backupPage.pageIndex,
-                    encryptedImageData: backupPage.encryptedImageData,
-                    nonce: backupPage.nonce,
-                    label: backupPage.label
-                )
-                page.document = document
-                modelContext.insert(page)
-            }
-
+        for document in insertedDocuments {
             ExpirationService.scheduleReminder(for: document)
         }
-
-        try modelContext.save()
     }
 
     nonisolated static func defaultFilename() -> String {

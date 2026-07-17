@@ -47,21 +47,33 @@ enum ScreenshotLaunchArgs {
     /// Whether --mock-subscribed was passed (overlaps with ScreenshotMode.isEnabled for compat).
     /// If true, EntitlementService returns Sovereign tier status.
     static var mockSubscribed: Bool {
+#if DEBUG
         launchArgs.contains("--mock-subscribed")
+#else
+        false
+#endif
     }
 
     /// Whether --mock-unsubscribed was passed.
     /// If true, EntitlementService returns locked (free) tier status.
     /// Mutually exclusive with --mock-subscribed; --mock-subscribed wins if both are set.
     static var mockUnsubscribed: Bool {
+#if DEBUG
         launchArgs.contains("--mock-unsubscribed")
+#else
+        false
+#endif
     }
 
     /// Whether --mock-locked was passed.
     /// If true, prevents automatic authentication on launch, keeping the vault locked.
     /// Used to display the lock screen / biometric gate frame.
     static var mockLocked: Bool {
+#if DEBUG
         launchArgs.contains("--mock-locked")
+#else
+        false
+#endif
     }
 
     /// Whether --show-scanner was passed.
