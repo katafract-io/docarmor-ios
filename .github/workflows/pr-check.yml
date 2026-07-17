@@ -1,36 +1,15 @@
 name: PR check (compile gate)
 
-# Verification Tier 0 — static compile on every PR that touches Swift/Xcode.
-# Portable across iOS repos: reads scheme/project from .github/repo-meta.yml.
-# KatafractStyle is a local SPM package (../KatafractStyle) — cloned as sibling.
-
 on:
+  # No paths filter: the "Compile" context is a REQUIRED check and must report on
+  # every PR head SHA (a path-filtered required check jams the PR on unlisted-file
+  # commits). Compile is fast/incremental. The security gate (adversarial review) is
+  # a SEPARATE base-branch-controlled workflow (adversarial-review.yml via
+  # workflow_run) so a PR head cannot edit its own gate.
   pull_request:
-    branches: [main]
-    paths:
-      - '**/*.swift'
-      - '**/*.xcodeproj/**'
-      - '**/*.pbxproj'
-      - 'Package.swift'
-      - 'Package.resolved'
-      - '.github/workflows/pr-check.yml'
-      - '.github/repo-meta.yml'
-  # Also run on branch push (not main): App-token / GITHUB_TOKEN events don't
-  # trigger workflows, so an App-created PR never fires pull_request — but a real
-  # branch push does, landing the check on the SHA before the PR exists.
-  push:
-    branches-ignore: [main]
-    paths:
-      - '**/*.swift'
-      - '**/*.xcodeproj/**'
-      - '**/*.pbxproj'
-      - 'Package.swift'
-      - 'Package.resolved'
-      - '.github/workflows/pr-check.yml'
-      - '.github/repo-meta.yml'
 
 concurrency:
-  group: pr-check-${{ github.head_ref || github.ref }}
+  group: pr-check-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
