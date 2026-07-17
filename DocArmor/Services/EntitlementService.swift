@@ -35,6 +35,7 @@ final class EntitlementService {
     private(set) var currentPlan: Plan = .locked
     private(set) var isLoading: Bool = false
     private(set) var unlockProduct: Product?
+    private(set) var appGroupReadFailed: Bool = false
     var purchaseError: String?
     var restoreOutcome: String?
 
@@ -152,9 +153,10 @@ final class EntitlementService {
 
     /// Reconcile state across (a) current StoreKit entitlements, (b) the
     /// Enclave shared App Group, (c) platform bundle-unlock, and (d) ScreenshotMode override.
-    /// Highest wins.
+    /// Highest wins. Tracks App Group read failure separately.
     func refreshEntitlements() async {
         var newPlan: Plan = .locked
+        appGroupReadFailed = false
 
         // ScreenshotMode override: check for explicit --mock-unsubscribed or --mock-subscribed flags
         if ScreenshotLaunchArgs.mockUnsubscribed {
@@ -163,7 +165,10 @@ final class EntitlementService {
             newPlan = .sovereign
         } else {
             // Check platform bundle-unlock first (Enclave/Sovereign token)
-            if PlatformEntitlement.isPlatformUnlocked {
+            let platformStatus = PlatformEntitlement.platformEntitlementStatus()
+            if platformStatus.readFailed {
+                appGroupReadFailed = true
+            } else if platformStatus.isUnlocked {
                 newPlan = Self.max(newPlan, .unlocked)
             }
 
@@ -180,6 +185,13 @@ final class EntitlementService {
             if hasSovereignEntitlement {
                 newPlan = Self.max(newPlan, .sovereign)
             }
+        }
+
+        // An App-Group read failure only matters if the user isn't entitled by some other
+        // path. A $7.99 IAP buyer with no Enclave app installed is fully entitled — don't
+        // surface a "couldn't verify subscription" error to them.
+        if newPlan >= .unlocked {
+            appGroupReadFailed = false
         }
 
         currentPlan = newPlan

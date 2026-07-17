@@ -8,6 +8,7 @@ struct DocumentDetailView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(EntitlementService.self) private var entitlementService
 
     @State private var decryptedImages: [UIImage] = []
     @State private var currentPageIndex = 0
@@ -24,6 +25,7 @@ struct DocumentDetailView: View {
     }
 
     @State private var showingPresentMode = false
+    @State private var showingPresentModePaywall = false
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
     @State private var showingShareSheet = false
@@ -130,8 +132,15 @@ struct DocumentDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                // Present Mode
-                Button(action: { showingPresentMode = true }) {
+                // Present Mode (premium — gate before the full-screen render decrypts nothing new,
+                // but honor the paywall so non-entitled users can't use the presentation affordance)
+                Button(action: {
+                    if entitlementService.canUsePresentMode {
+                        showingPresentMode = true
+                    } else {
+                        showingPresentModePaywall = true
+                    }
+                }) {
                     Image(systemName: "rectangle.expand.vertical")
                 }
                 .disabled(decryptedImages.isEmpty)
@@ -177,6 +186,13 @@ struct DocumentDetailView: View {
         }
         .fullScreenCover(isPresented: $showingPresentMode) {
             PresentModeView(images: decryptedImages, initialIndex: currentPageIndex, documentName: document.name)
+        }
+        .sheet(isPresented: $showingPresentModePaywall) {
+            PaywallView(
+                reason: .presentMode,
+                entitlementService: entitlementService,
+                dismiss: { showingPresentModePaywall = false }
+            )
         }
         .sheet(isPresented: $showingEditSheet) {
             AddDocumentView(editingDocument: document)
@@ -385,6 +401,10 @@ struct DocumentDetailView: View {
 
     private func deleteDocument() {
         ExpirationService.cancelReminder(for: document)
+        let deletedID = document.id
+        Task.detached(priority: .background) {
+            await SovereignBackupService.deleteRemote(documentId: deletedID)
+        }
         modelContext.delete(document)
         dismiss()
     }

@@ -9,10 +9,14 @@ import UIKit  // for UIImage in attachMockPage()
 ///   - Current: --screenshots (double-dash, single arg — ScreenshotTests + ScreenshotLaunchArgs)
 public class ScreenshotMode {
     static let isEnabled: Bool = {
+#if DEBUG
         let args = CommandLine.arguments
         let legacy = args.contains("-ScreenshotMode") && args.contains("seedData")
         let current = args.contains("--screenshots")
         return legacy || current
+#else
+        return false
+#endif
     }()
 
     static func seedDocuments() -> [Document] {

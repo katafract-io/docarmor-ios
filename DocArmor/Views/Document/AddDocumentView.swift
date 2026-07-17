@@ -585,6 +585,11 @@ struct AddDocumentView: View {
                 get: { scannerError != nil },
                 set: { if !$0 { scannerError = nil } }
             )) {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(scannerError ?? "The document scanner could not start. Check that camera access is allowed in Settings.")

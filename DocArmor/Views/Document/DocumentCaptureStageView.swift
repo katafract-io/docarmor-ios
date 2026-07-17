@@ -120,6 +120,11 @@ struct DocumentCaptureStageView: View {
             get: { scannerError != nil },
             set: { if !$0 { scannerError = nil } }
         )) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
             Button("OK", role: .cancel) {}
         } message: {
             Text(scannerError ?? "Check that camera access is allowed in Settings.")
