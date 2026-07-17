@@ -1,24 +1,21 @@
-name: PR check (compile gate)
+name: PR check (compile + adversarial gate)
 
 on:
-  # pull_request ONLY (fires for autofix-bot-authored PRs too, verified). No `push` trigger:
-  # push + pull_request both firing for the SAME commit left a cancelled run of the required
-  # context → merge blocked. One run per commit means adversarial-review can be REQUIRED.
+  # No paths filter: BOTH jobs below are REQUIRED status checks. A required check
+  # whose workflow is path-filtered never reports on a head SHA whose commit touches
+  # only unlisted files (Fastfile, docs, shell) — the PR jams "Expected — waiting for
+  # status" forever, or (if not required) the change merges UNREVIEWED. Running on
+  # every PR guarantees both required contexts report on every head SHA. Compile is
+  # fast (incremental); the adversarial review is diff-scoped and cheap.
   pull_request:
-    paths:
-      - '**/*.swift'
-      - '**/*.xcodeproj/**'
-      - '**/*.pbxproj'
-      - 'project.yml'
-      - 'Package.swift'
-      - 'Package.resolved'
-      - '.github/workflows/pr-check.yml'
-      - '.github/repo-meta.yml'
 
-# Safe with pull_request-only: cancels only older-commit runs (a new commit = new head SHA),
-# never a same-SHA sibling, so the head commit never carries a cancelled required check.
 concurrency:
-  group: pr-check-${{ github.head_ref || github.ref_name }}
+  # Key on PR number, not branch name. Two PRs sharing a head_ref (e.g. GitHub's
+  # default 'patch-1', or a fork) would otherwise map to one group, and
+  # cancel-in-progress would leave a CANCELLED required check on the other PR's head
+  # SHA → its merge blocked. PR number is unique per PR. ref_name fallback covers the
+  # (unused) non-PR case.
+  group: pr-check-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
