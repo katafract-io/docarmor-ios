@@ -1,0 +1,3 @@
+# Consumed by pr-check.yml (the compile gate). Keeps the workflow repo-agnostic.
+scheme: DocArmor
+project: DocArmor.xcodeproj
