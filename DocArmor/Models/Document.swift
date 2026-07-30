@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import CryptoKit
 
 @Model
 final class Document {
@@ -145,12 +146,7 @@ final class Document {
         }
 
         // Compute SHA-256 hash (same as SovereignBackupService.hexDigest)
-        var digest = [UInt8](repeating: 0, count: Int(32))
-        jsonData.withUnsafeBytes { buffer in
-            _ = CryptoKit.SHA256.hash(data: buffer).withUnsafeBytes { hashBytes in
-                digest = Array(hashBytes)
-            }
-        }
+        let digest = SHA256.hash(data: jsonData)
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 

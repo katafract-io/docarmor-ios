@@ -1201,7 +1201,10 @@ struct AddDocumentView: View {
                         await MainActor.run {
                             // Re-fetch the document to ensure we're updating the current state.
                             let ctx = ModelContext(capturedContainer)
-                            if let refetched = try? ctx.model(for: documentID) as? Document {
+                            var descriptor = FetchDescriptor<Document>(
+                                predicate: #Predicate { $0.id == documentID }
+                            )
+                            if let refetched = (try? ctx.fetch(descriptor))?.first {
                                 // Double-check the plaintext hash still matches (no new edits intervened).
                                 if refetched.computeBackupHash() == preBackupHash {
                                     refetched.lastBackedUpAt = Date.now
