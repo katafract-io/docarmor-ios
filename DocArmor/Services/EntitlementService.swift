@@ -50,8 +50,14 @@ final class EntitlementService {
     var hasFamilyVault: Bool     { hasPremiumLocal }
     var smartPackLimit: Int      { hasPremiumLocal ? .max : 1 }
 
-    /// Cloud backup — Sovereign only.
-    var hasCloudBackup: Bool { currentPlan == .sovereign }
+    /// Cloud backup — available to Sovereign or Founder tier users.
+    /// Uses the shared CloudBackupCapability model for consistency across all code paths.
+    var hasCloudBackup: Bool {
+        // First check if the plan from App Group is cloud-capable
+        // If yes, map currentPlan to .sovereign level (since we elevated all Founder plans here too)
+        let (isCloudCapable, _) = CloudBackupCapability.resolveFromAppGroup()
+        return isCloudCapable && currentPlan == .sovereign
+    }
 
     var isSovereign: Bool { currentPlan == .sovereign }
 
@@ -61,11 +67,13 @@ final class EntitlementService {
     private static let tokenKey        = "enclave.sigil.token"
     private static let planKey         = "enclave.sigil.plan"
 
+    /// Check if App Group contains a Sovereign/Founder entitlement (cloud-capable plan).
+    /// Uses CloudBackupCapability.isCloudCapable() for consistency.
     private var hasSovereignEntitlement: Bool {
         guard let defaults = UserDefaults(suiteName: Self.enclaveAppGroup) else { return false }
         let token = defaults.string(forKey: Self.tokenKey) ?? ""
-        let plan  = (defaults.string(forKey: Self.planKey) ?? "").lowercased()
-        return !token.isEmpty && (plan == "sovereign" || plan == "sovereign_annual")
+        let plan = defaults.string(forKey: Self.planKey) ?? ""
+        return !token.isEmpty && CloudBackupCapability.isCloudCapable(plan: plan)
     }
 
     // MARK: - StoreKit (one-time unlock)

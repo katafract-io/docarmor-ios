@@ -1169,10 +1169,13 @@ struct AddDocumentView: View {
             }
             try modelContext.save()
 
-            // Cloud backup: fire-and-forget for Sovereign/Founder users.
+            // Cloud backup: fire-and-forget for Sovereign/Founder users with explicit opt-in.
             // Never blocks the save or the dismiss.
-            let backupEnabled = UserDefaults.standard.object(forKey: "sovereignBackup.enabled") as? Bool ?? true
-            if entitlementService.hasCloudBackup, backupEnabled, let doc = savedDocument {
+            // FIXED: Use explicit preference reading — do NOT default missing preference to true.
+            if entitlementService.hasCloudBackup,
+               let backupEnabledExplicitly = CloudBackupCapability.Preference.readExplicitChoice(),
+               backupEnabledExplicitly,
+               let doc = savedDocument {
                 let capturedKey = key
                 let capturedDoc = doc
                 Task.detached(priority: .background) {

@@ -254,10 +254,22 @@ struct DocArmorApp: App {
     }
 
     /// Retry backup for all documents with lastBackedUpAt == nil (never backed up).
-    /// Called on scene .active when user has Sovereign/Founder plan and backup is enabled.
+    /// Called on scene .active when user has Sovereign/Founder plan and backup is explicitly enabled.
+    ///
+    /// **Critical fix (issue #148):** This foreground recovery path now:
+    /// 1. Uses the same CloudBackupCapability model as Settings/EntitlementService for consistency
+    /// 2. Only backs up if the user has EXPLICITLY opted in (preference must exist and be true)
+    ///    — never backs up if preference is nil/absent (user never saw the control)
+    /// 3. Will not silently upload documents for plans/states with no corresponding UI control
     private nonisolated func retrySovereignBackups(modelContainer: ModelContainer) async {
         guard SovereignBackupService.sovereignToken() != nil else { return }
-        guard UserDefaults.standard.object(forKey: "sovereignBackup.enabled") as? Bool ?? true else { return }
+
+        // FIXED: Use explicit preference reading that returns nil for missing/unset preference.
+        // Do NOT default missing preference to true — that was implicit consent without UI.
+        guard let backupEnabledExplicitly = CloudBackupCapability.Preference.readExplicitChoice(),
+              backupEnabledExplicitly else {
+            return  // User either explicitly disabled (false) or never made a choice (nil)
+        }
 
         let key: SymmetricKey
         do {

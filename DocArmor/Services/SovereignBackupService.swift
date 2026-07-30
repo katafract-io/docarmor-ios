@@ -213,13 +213,14 @@ enum SovereignBackupService {
 
     // MARK: - Entitlement check
 
-    /// Returns the Sigil token from the shared App Group iff the plan is sovereign or founder.
+    /// Returns the Sigil token from the shared App Group iff the plan is cloud-capable
+    /// (sovereign, sovereign_annual, or founder).
+    /// Uses CloudBackupCapability.isCloudCapable() for consistency across all entry points.
     static func sovereignToken() -> String? {
         guard let defaults = UserDefaults(suiteName: appGroup) else { return nil }
         let token = defaults.string(forKey: tokenKey) ?? ""
-        let plan  = (defaults.string(forKey: planKey) ?? "").lowercased()
-        guard !token.isEmpty,
-              plan == "sovereign" || plan == "sovereign_annual" || plan == "founder" else {
+        let plan = defaults.string(forKey: planKey) ?? ""
+        guard !token.isEmpty, CloudBackupCapability.isCloudCapable(plan: plan) else {
             return nil
         }
         return token
