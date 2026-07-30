@@ -89,9 +89,60 @@ enum VaultKey {
         }
     }
 
+    /// Replace the existing vault key with new key data.
+    /// If the key exists, use SecItemUpdate (atomic). If it doesn't exist, create it.
+    /// If replacement fails after partial changes, attempt to restore the old key.
     nonisolated static func replace(with keyData: Data) throws {
-        try delete()
-        try store(keyData: keyData)
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+            kSecReturnData:  true,
+            kSecMatchLimit:  kSecMatchLimitOne
+        ]
+
+        // Try to load the old key so we can restore it if the update fails.
+        var oldKeyData: Data? = nil
+        do {
+            oldKeyData = try load().withUnsafeBytes { Data($0) }
+        } catch {
+            // No existing key; will create one instead.
+        }
+
+        if let _ = oldKeyData {
+            // Key exists; use atomic SecItemUpdate
+            let updateAttributes: [CFString: Any] = [kSecValueData: keyData]
+            let status = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
+
+            if status == errSecSuccess {
+                return
+            }
+
+            // Update failed; attempt to restore the old key if we have it
+            if let old = oldKeyData {
+                _ = try? restoreOldKey(old)
+            }
+            throw VaultKeyError.keychainError(status)
+        } else {
+            // No key exists; create new one
+            try store(keyData: keyData)
+        }
+    }
+
+    /// Restore old key data after a failed replacement (recovery path).
+    nonisolated private static func restoreOldKey(_ oldKeyData: Data) throws {
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account
+        ]
+
+        let updateAttributes: [CFString: Any] = [kSecValueData: oldKeyData]
+        let status = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
+
+        guard status == errSecSuccess else {
+            throw VaultKeyError.keychainError(status)
+        }
     }
 
     /// Returns `true` if a vault key exists in the Keychain (app has been set up before).
