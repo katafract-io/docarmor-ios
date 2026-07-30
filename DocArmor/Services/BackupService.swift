@@ -330,9 +330,11 @@ enum BackupService {
             throw BackupError.invalidPassphrase
         }
 
-        var material = Data(SHA256.hash(data: passphraseData + salt))
+        var digest = SHA256.hash(data: passphraseData + salt)
+        var material = Data(digest)
         for _ in 0..<100_000 {
-            material = Data(SHA256.hash(data: material + passphraseData + salt))
+            digest = SHA256.hash(data: material + passphraseData + salt)
+            material = Data(digest)
         }
         return SymmetricKey(data: material)
     }
