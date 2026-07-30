@@ -95,7 +95,19 @@ final class ShareViewController: UIViewController {
         setImporting(true)
         Task {
             do {
-                try await persistAttachments()
+                let manifest = try await persistAttachments()
+                try manifest.save()
+
+                // If there are failures, show the partial result before completing
+                if !manifest.isFullSuccess && manifest.hasPartialSuccess {
+                    presentPartialSuccess(manifest)
+                } else if !manifest.hasPartialSuccess {
+                    // All failed
+                    presentError(manifest.resultSummary)
+                    setImporting(false)
+                    return
+                }
+
                 extensionContext?.completeRequest(returningItems: nil)
             } catch {
                 presentError(error.localizedDescription)
@@ -110,39 +122,86 @@ final class ShareViewController: UIViewController {
         importing ? activityIndicator.startAnimating() : activityIndicator.stopAnimating()
     }
 
-    private func persistAttachments() async throws {
+    private func persistAttachments() async throws -> ImportOperationManifest {
         let folder = try importFolderURL()
-        var imported = 0
-        var lastError: Error?
-        for provider in attachmentProviders {
+        let operationID = UUID().uuidString
+        var items: [ImportOperationManifest.ImportedItem] = []
+
+        for (index, provider) in attachmentProviders.enumerated() {
+            let sourceIdentifier = "Item \(index + 1)"
             do {
-                try await persist(provider: provider, into: folder)
-                imported += 1
+                let fileName = try await persist(provider: provider, into: folder)
+                items.append(ImportOperationManifest.ImportedItem(
+                    sourceIdentifier: sourceIdentifier,
+                    persistedFileName: fileName,
+                    status: .success,
+                    errorDescription: nil
+                ))
+            } catch let error as NSError {
+                // Categorize the error
+                let status: ImportOperationManifest.ItemStatus
+                switch (error.domain, error.code) {
+                case ("DocArmorShareExtension", 415):
+                    status = .failedLoadUnsupported
+                case ("DocArmorShareExtension", 413):
+                    status = .failedFileSize
+                case ("DocArmorShareExtension", 3):
+                    status = .failedImagePrep
+                case ("DocArmorShareExtension", 2):
+                    status = .failedFileRepresentation
+                case ("DocArmorShareExtension", 4):
+                    status = .failedFileURL
+                case ("DocArmorShareExtension", 1):
+                    status = .failedContainerAccess
+                default:
+                    status = .unknown
+                }
+
+                items.append(ImportOperationManifest.ImportedItem(
+                    sourceIdentifier: sourceIdentifier,
+                    persistedFileName: nil,
+                    status: status,
+                    errorDescription: error.localizedDescription
+                ))
             } catch {
-                // Isolate per-attachment failures: one unsupported item in a mixed share
-                // must not drop the valid images/PDFs shared alongside it.
-                lastError = error
+                items.append(ImportOperationManifest.ImportedItem(
+                    sourceIdentifier: sourceIdentifier,
+                    persistedFileName: nil,
+                    status: .unknown,
+                    errorDescription: error.localizedDescription
+                ))
             }
         }
-        // Only surface an error if NOTHING imported. If at least one attachment succeeded,
-        // complete the share rather than reporting a failure over a partial success.
-        if imported == 0, let lastError {
-            throw lastError
+
+        let manifest = ImportOperationManifest(
+            operationID: operationID,
+            createdAt: Date(),
+            expectedItemCount: attachmentProviders.count,
+            items: items,
+            isAcknowledged: false
+        )
+
+        // Only throw if NOTHING imported
+        if manifest.successCount == 0 && manifest.failureCount > 0 {
+            throw NSError(
+                domain: "DocArmorShareExtension",
+                code: 500,
+                userInfo: [NSLocalizedDescriptionKey: manifest.resultSummary]
+            )
         }
+
+        return manifest
     }
 
-    private func persist(provider: NSItemProvider, into folder: URL) async throws {
+    private func persist(provider: NSItemProvider, into folder: URL) async throws -> String {
         if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
-            try await persistFileRepresentation(provider: provider, type: .pdf, into: folder)
-            return
+            return try await persistFileRepresentation(provider: provider, type: .pdf, into: folder)
         }
         if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-            try await persistImage(provider: provider, into: folder)
-            return
+            return try await persistImage(provider: provider, into: folder)
         }
         if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            try await persistFileURL(provider: provider, into: folder)
-            return
+            return try await persistFileURL(provider: provider, into: folder)
         }
         // Explicitly reject unsupported file types (e.g. .txt, .docx, .zip, links)
         throw NSError(
@@ -152,18 +211,20 @@ final class ShareViewController: UIViewController {
         )
     }
 
-    private func persistImage(provider: NSItemProvider, into folder: URL) async throws {
+    private func persistImage(provider: NSItemProvider, into folder: URL) async throws -> String {
         let image = try await loadObject(ofClass: UIImage.self, from: provider)
         let downsampledImage = downsampleImage(image, maxDimension: 2400, compressionQuality: 0.82)
         guard let jpegData = downsampledImage.jpegData(compressionQuality: 0.82), !jpegData.isEmpty else {
             throw NSError(domain: "DocArmorShareExtension", code: 3, userInfo: [NSLocalizedDescriptionKey: "Image data could not be prepared for storage."])
         }
         try validateFileSize(jpegData.count)
-        let fileURL = folder.appendingPathComponent("share-\(UUID().uuidString).jpg")
+        let fileName = "share-\(UUID().uuidString).jpg"
+        let fileURL = folder.appendingPathComponent(fileName)
         try jpegData.write(to: fileURL, options: .atomic)
+        return fileName
     }
 
-    private func persistFileURL(provider: NSItemProvider, into folder: URL) async throws {
+    private func persistFileURL(provider: NSItemProvider, into folder: URL) async throws -> String {
         let fileURL = try await loadFileURL(provider: provider)
         let uti = UTType(filenameExtension: fileURL.pathExtension)
 
@@ -174,7 +235,7 @@ final class ShareViewController: UIViewController {
             try validateFileSize(fileSize)
             let destination = uniqueDestinationURL(in: folder, preferredName: fileURL.lastPathComponent)
             try FileManager.default.copyItem(at: fileURL, to: destination)
-            return
+            return destination.lastPathComponent
         }
 
         // Image file: downsample before writing (avoid copying a 50 MB original into the inbox).
@@ -184,9 +245,10 @@ final class ShareViewController: UIViewController {
                 throw NSError(domain: "DocArmorShareExtension", code: 3, userInfo: [NSLocalizedDescriptionKey: "Image data could not be prepared for storage."])
             }
             try validateFileSize(jpegData.count)
-            let destination = folder.appendingPathComponent("share-\(UUID().uuidString).jpg")
+            let fileName = "share-\(UUID().uuidString).jpg"
+            let destination = folder.appendingPathComponent(fileName)
             try jpegData.write(to: destination, options: .atomic)
-            return
+            return fileName
         }
 
         // Anything else (.docx/.zip/.txt/etc.) — reject rather than jamming the inbox with
@@ -202,13 +264,14 @@ final class ShareViewController: UIViewController {
         provider: NSItemProvider,
         type: UTType,
         into folder: URL
-    ) async throws {
+    ) async throws -> String {
         let sourceURL = try await loadFileRepresentation(provider: provider, type: type)
         let attributes = try FileManager.default.attributesOfItem(atPath: sourceURL.path)
         let fileSize = attributes[.size] as? Int ?? 0
         try validateFileSize(fileSize)
         let destination = uniqueDestinationURL(in: folder, preferredName: sourceURL.lastPathComponent)
         try FileManager.default.copyItem(at: sourceURL, to: destination)
+        return destination.lastPathComponent
     }
 
     private func importFolderURL() throws -> URL {
@@ -274,22 +337,34 @@ final class ShareViewController: UIViewController {
     }
 
     private func cleanupStaleInboxItems() {
-        // Must match the App Group importFolderURL() writes to, else the real
-        // inbox is never cleaned (was "group.com.katafract.enclave").
+        // Only delete files that have been acknowledged by the main app (consumed).
+        // Keep unacknowledged items indefinitely so the user has time to review them.
+        // This prevents losing successfully-shared items just because another unrelated
+        // share session ran.
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.katafract.DocArmor") else {
             return
         }
+
         let inboxURL = containerURL.appendingPathComponent("ImportInbox", isDirectory: true)
-        let cutoff = Date(timeIntervalSinceNow: -86400)  // 24 hours ago
 
         do {
             let contents = try FileManager.default.contentsOfDirectory(
                 at: inboxURL,
                 includingPropertiesForKeys: [.creationDateKey]
             )
+
+            // Get all persisted manifests to check acknowledgment status
+            let manifests = ImportOperationManifest.allManifests()
+
             for itemURL in contents {
-                let resourceValues = try itemURL.resourceValues(forKeys: [.creationDateKey])
-                if let creationDate = resourceValues.creationDate, creationDate < cutoff {
+                let fileName = itemURL.lastPathComponent
+                // Only delete if this file is in an acknowledged manifest
+                let inAcknowledgedManifest = manifests.contains { manifest in
+                    manifest.isAcknowledged &&
+                    manifest.items.contains { $0.persistedFileName == fileName }
+                }
+
+                if inAcknowledgedManifest {
                     try FileManager.default.removeItem(at: itemURL)
                 }
             }
@@ -301,6 +376,18 @@ final class ShareViewController: UIViewController {
     private func presentError(_ message: String) {
         let alert = UIAlertController(title: "Import Failed", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+
+    private func presentPartialSuccess(_ manifest: ImportOperationManifest) {
+        let alert = UIAlertController(
+            title: "Partial Import",
+            message: manifest.resultSummary + "\n\nSuccessfully imported items are ready in DocArmor's inbox.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+            self.extensionContext?.completeRequest(returningItems: nil)
+        })
         present(alert, animated: true)
     }
 

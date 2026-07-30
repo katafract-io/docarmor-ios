@@ -44,6 +44,16 @@ enum ImportInboxService {
         return urls.compactMap(makePendingImportItem(url:)).sorted { $0.createdAt > $1.createdAt }
     }
 
+    /// Returns all pending import operations (unacknowledged manifests) with their results.
+    nonisolated static func pendingOperations() -> [ImportOperationManifest] {
+        ImportOperationManifest.allManifests().filter { !$0.isAcknowledged }
+    }
+
+    /// Returns partial import operations (some items succeeded, some failed).
+    nonisolated static func partialOperations() -> [ImportOperationManifest] {
+        pendingOperations().filter { $0.hasPartialSuccess && !$0.isFullSuccess }
+    }
+
     nonisolated static func pendingCount() -> Int {
         pendingItems().count
     }
@@ -54,6 +64,20 @@ enum ImportInboxService {
 
     nonisolated static func consume(_ item: PendingImportItem) throws {
         try removeItem(at: item.fileURL)
+    }
+
+    /// Acknowledge and remove an import operation after all its successful items have been consumed.
+    nonisolated static func acknowledgeOperation(_ operationID: String) throws {
+        guard var manifest = try ImportOperationManifest.load(operationID: operationID) else {
+            return
+        }
+        manifest.acknowledge()
+        try manifest.save()
+    }
+
+    /// Clean up old acknowledged manifests (older than 7 days).
+    nonisolated static func cleanupOldManifests() {
+        ImportOperationManifest.cleanupOldManifests()
     }
 
     nonisolated static func clearInbox() throws {

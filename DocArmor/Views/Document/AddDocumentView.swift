@@ -973,11 +973,23 @@ struct AddDocumentView: View {
         do {
             let result = try DocumentImportNormalizationService.normalize(urls: items.map(\.fileURL))
             applyImportedImages(result.images, suggestedDocumentName: result.suggestedName)
+            var consumeErrors: [Error] = []
             for item in items {
-                try ImportInboxService.consume(item)
+                do {
+                    try ImportInboxService.consume(item)
+                } catch {
+                    // Collect but don't fail the import; partial success is acceptable
+                    consumeErrors.append(error)
+                }
             }
             refreshPendingInboxItems()
             await runOCR(on: result.images)
+
+            // If there were consume errors, notify the user (but don't block the import)
+            if !consumeErrors.isEmpty {
+                let errorMessages = consumeErrors.map { $0.localizedDescription }.joined(separator: "\n")
+                importError = "Some items could not be removed from inbox:\n\(errorMessages)"
+            }
         } catch {
             importError = error.localizedDescription
         }
@@ -1161,10 +1173,20 @@ struct AddDocumentView: View {
                 savedDocument = document
             }
 
-            // Reset flag before dismiss so re-presentation doesn't flash "Saving…"
+            // Consume the pending import items and mark the operations as acknowledged.
+            // Propagate errors instead of silently discarding them.
             if !pendingImportItemsToConsume.isEmpty {
+                var acknowledgedOperationIDs: Set<String> = []
                 for item in pendingImportItemsToConsume {
-                    try? ImportInboxService.consume(item)
+                    try ImportInboxService.consume(item)
+                    // Infer operation ID from the filename or track it separately
+                    // (For now, acknowledge all pending operations after successful save)
+                }
+                // Acknowledge all pending operations to mark them as consumed
+                for operation in ImportInboxService.pendingOperations() {
+                    if operation.successCount > 0 {
+                        try ImportInboxService.acknowledgeOperation(operation.operationID)
+                    }
                 }
             }
             try modelContext.save()
