@@ -3,6 +3,14 @@ import SwiftData
 import CryptoKit
 import KatafractStyle
 
+// MARK: - Loading State Machine
+enum DocumentLoadingState {
+    case idle
+    case loading
+    case loaded
+    case failed(String)
+}
+
 struct DocumentDetailView: View {
     let document: Document
 
@@ -12,16 +20,10 @@ struct DocumentDetailView: View {
 
     @State private var decryptedImages: [UIImage] = []
     @State private var currentPageIndex = 0
-    @State private var isLoading: Bool
-    @State private var decryptError: String?
-    @State private var isDecrypting = false
+    @State private var loadingState: DocumentLoadingState = .idle
 
     init(document: Document) {
         self.document = document
-        // Only enter loading state if there are pages to decrypt.
-        // Documents with no pages show the empty placeholder immediately
-        // without the spinner flash that caused first-tap blank appearance.
-        _isLoading = State(initialValue: !document.pages.isEmpty)
     }
 
     @State private var showingPresentMode = false
@@ -167,16 +169,14 @@ struct DocumentDetailView: View {
             }
         }
         .task(id: document.persistentModelID) {
-            await decryptPages()
+            await startDecryption()
         }
         .onAppear {
             updateCaptureState()
-            // Safety net for the blank-on-first-open bug: if a navigation
-            // re-render dropped the initial decrypt task, re-kick it so the
-            // page never stays stuck on the empty placeholder.
-            if decryptedImages.isEmpty && !isLoading && !isDecrypting && decryptError == nil {
-                Task { await decryptPages() }
-            }
+            // Safety net: if the initial .task was dropped or hasn't started yet,
+            // this will idempotently kick off decryption. Safe to call from both
+            // .task and onAppear because startDecryption checks state before starting.
+            Task { await startDecryption() }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIScreen.capturedDidChangeNotification)) { _ in
             updateCaptureState()
@@ -259,9 +259,10 @@ struct DocumentDetailView: View {
         ZStack {
             Color(.systemGroupedBackground)
 
-            if isLoading {
+            switch loadingState {
+            case .loading:
                 KataProgressRing(size: 24)
-            } else if let error = decryptError {
+            case .failed(let error):
                 VStack(spacing: 8) {
                     Image(systemName: "exclamationmark.lock.fill")
                         .font(.largeTitle)
@@ -272,36 +273,51 @@ struct DocumentDetailView: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding()
-            } else if decryptedImages.isEmpty {
-                Image(systemName: "doc.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.tertiary)
-            } else {
-                TabView(selection: $currentPageIndex) {
-                    ForEach(decryptedImages.indices, id: \.self) { i in
-                        Image(uiImage: decryptedImages[i])
-                            .resizable()
-                            .scaledToFit()
-                            .padding(12)
-                            .tag(i)
+            case .idle, .loaded:
+                // In both .idle (before loading starts) and .loaded states,
+                // show empty placeholder if no images yet, else show images.
+                if decryptedImages.isEmpty {
+                    Image(systemName: "doc.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.tertiary)
+                } else {
+                    TabView(selection: $currentPageIndex) {
+                        ForEach(decryptedImages.indices, id: \.self) { i in
+                            Image(uiImage: decryptedImages[i])
+                                .resizable()
+                                .scaledToFit()
+                                .padding(12)
+                                .tag(i)
+                        }
                     }
+                    .tabViewStyle(.page)
+                    .indexViewStyle(.page(backgroundDisplayMode: .always))
                 }
-                .tabViewStyle(.page)
-                .indexViewStyle(.page(backgroundDisplayMode: .always))
             }
         }
     }
 
     // MARK: - Decrypt
 
+    /// Idempotent entry point for decryption. Only starts if state is .idle.
+    /// Safe to call from multiple lifecycle hooks (.task, onAppear, etc.) without
+    /// worrying about duplicate work or race conditions.
+    private func startDecryption() async {
+        // Guard: only start if we're in the idle state.
+        // Any other state (.loading, .loaded, .failed) means work is already in progress
+        // or has completed — don't restart.
+        guard case .idle = loadingState else { return }
+
+        // Transition to loading state before starting async work.
+        loadingState = .loading
+
+        // Now run the actual decryption.
+        await decryptPages()
+    }
+
+    /// Performs the actual page decryption. Called by startDecryption().
+    /// On success, transitions to .loaded. On error or cancellation, transitions to .failed.
     private func decryptPages() async {
-        // Re-entrancy guard: the .task and the onAppear safety net can both
-        // fire; never run two decrypts concurrently.
-        guard !isDecrypting else { return }
-        isDecrypting = true
-        defer { isDecrypting = false }
-        isLoading = true
-        decryptError = nil
         currentPageIndex = 0
 
         do {
@@ -334,11 +350,11 @@ struct DocumentDetailView: View {
             }
             // Restore page order from the index map
             decryptedImages = (0..<pages.count).compactMap { ordered[$0] }
+            loadingState = .loaded
         } catch {
-            decryptError = "Could not decrypt document: \(error.localizedDescription)"
+            let errorMsg = "Could not decrypt document: \(error.localizedDescription)"
+            loadingState = .failed(errorMsg)
         }
-
-        isLoading = false
     }
 
     // MARK: - Share
