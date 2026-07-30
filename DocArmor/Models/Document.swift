@@ -94,6 +94,66 @@ final class Document {
         pages.sorted { $0.pageIndex < $1.pageIndex }
     }
 
+    /// Indicates whether this document's current state differs from the last backed-up revision.
+    /// Dirty documents must be re-backed-up even if `lastBackedUpAt` is not nil.
+    var isDirtyForBackup: Bool {
+        let currentHash = computeBackupHash()
+        // Document is dirty if:
+        // 1. It's never been backed up (no hash), OR
+        // 2. The current content differs from the last backed-up content (hash mismatch)
+        guard let lastHash = lastBackupHash else { return true }
+        return currentHash != lastHash
+    }
+
+    /// Computes a deterministic SHA-256 hash of the document's current content+metadata
+    /// (matching the format that would be uploaded to Vaultyx). Used for change detection.
+    func computeBackupHash() -> String {
+        // Mirror the DocumentSnapshot structure from SovereignBackupService.
+        // The hash is computed over the plaintext JSON before encryption.
+        let snapshot: [String: Any] = [
+            "formatVersion": 2,
+            "id": id.uuidString,
+            "name": name,
+            "ownerName": ownerName as Any,
+            "documentTypeRaw": documentTypeRaw,
+            "categoryRaw": categoryRaw,
+            "notes": notes,
+            "issuerName": issuerName,
+            "identifierSuffix": identifierSuffix,
+            "lastVerifiedAt": lastVerifiedAt as Any,
+            "renewalNotes": renewalNotes,
+            "expirationDate": expirationDate as Any,
+            "expirationReminderDays": expirationReminderDays as Any,
+            "createdAt": createdAt,
+            "updatedAt": updatedAt,
+            "isFavorite": isFavorite,
+            "pages": sortedPages.map { page in
+                [
+                    "id": page.id.uuidString,
+                    "pageIndex": page.pageIndex,
+                    "encryptedImageData": page.encryptedImageData.base64EncodedString(),
+                    "nonce": page.nonce.base64EncodedString(),
+                    "label": page.label as Any
+                ] as [String: Any]
+            },
+            "source": "docarmor"
+        ]
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: snapshot, options: [.sortedKeys, .withoutEscapingSlashes]) else {
+            // Fallback to empty hash if serialization fails; document will be marked dirty on next check
+            return ""
+        }
+
+        // Compute SHA-256 hash (same as SovereignBackupService.hexDigest)
+        var digest = [UInt8](repeating: 0, count: Int(32))
+        jsonData.withUnsafeBytes { buffer in
+            _ = CryptoKit.SHA256.hash(data: buffer).withUnsafeBytes { hashBytes in
+                digest = Array(hashBytes)
+            }
+        }
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
     // MARK: - Init
 
     init(

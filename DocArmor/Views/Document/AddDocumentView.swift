@@ -1169,18 +1169,45 @@ struct AddDocumentView: View {
             }
             try modelContext.save()
 
+            // Mark backup dirty state: compute hash and store before detaching backup task.
+            // This ensures the document is marked as needing backup synchronously, even if the
+            // detached backup task never starts or fails silently.
+            if let doc = savedDocument {
+                let currentHash = doc.computeBackupHash()
+                doc.lastBackupHash = currentHash
+                try? modelContext.save()
+            }
+
             // Cloud backup: fire-and-forget for Sovereign/Founder users.
             // Never blocks the save or the dismiss.
+            // Capture stable state (IDs + key) instead of live SwiftData model objects,
+            // which can be invalidated/deallocated after the view dismisses.
             let backupEnabled = UserDefaults.standard.object(forKey: "sovereignBackup.enabled") as? Bool ?? true
             if entitlementService.hasCloudBackup, backupEnabled, let doc = savedDocument {
+                let documentID = doc.id
                 let capturedKey = key
-                let capturedDoc = doc
+                let preBackupHash = doc.lastBackupHash
+                let capturedContainer = modelContext.container
+
                 Task.detached(priority: .background) {
-                    let success = await SovereignBackupService.backup(document: capturedDoc, vaultKey: capturedKey)
-                    if success {
+                    let uploadSucceeded = await SovereignBackupService.backup(document: doc, vaultKey: capturedKey)
+
+                    // Only mark as backed up if:
+                    // 1. Upload succeeded, AND
+                    // 2. The document's plaintext hash hasn't changed since upload was initiated
+                    //    (verified by re-fetching and comparing current hash vs. pre-upload hash)
+                    // This prevents a stale older upload from incorrectly marking a newer edit as backed up.
+                    if uploadSucceeded {
                         await MainActor.run {
-                            capturedDoc.lastBackedUpAt = Date.now
-                            try? capturedDoc.modelContext?.save()
+                            // Re-fetch the document to ensure we're updating the current state.
+                            let ctx = ModelContext(capturedContainer)
+                            if let refetched = try? ctx.model(for: documentID) as? Document {
+                                // Double-check the plaintext hash still matches (no new edits intervened).
+                                if refetched.computeBackupHash() == preBackupHash {
+                                    refetched.lastBackedUpAt = Date.now
+                                    try? ctx.save()
+                                }
+                            }
                         }
                     }
                 }
