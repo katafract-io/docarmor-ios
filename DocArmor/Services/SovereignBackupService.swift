@@ -171,6 +171,21 @@ enum SovereignBackupService {
 
     // MARK: - Public API — Delete / purge
 
+    struct PurgeResult {
+        /// Number of files successfully deleted (HTTP 2xx response).
+        var deletedCount: Int = 0
+        /// Number of files that failed to delete (non-2xx or network error).
+        var failedCount: Int = 0
+        /// true if list operation succeeded; false means we don't know how many files need deleting.
+        var listSucceeded: Bool = false
+        /// true if NO local errors occurred (all required local steps completed).
+        var localOpsSucceeded: Bool = false
+        /// If non-nil, a description of what went wrong (e.g., "No Sovereign subscription").
+        var errorDescription: String?
+
+        var partialFailure: Bool { failedCount > 0 || !listSucceeded }
+    }
+
     /// Best-effort remote soft-delete of a document's backup. Call fire-and-forget after a local delete.
     static func deleteRemote(documentId: UUID) async {
         guard let token = sovereignToken() else { return }
@@ -181,17 +196,50 @@ enum SovereignBackupService {
         _ = try? await URLSession.shared.data(for: req)
     }
 
-    /// Best-effort purge of ALL of this vault's DocArmor backups. Used by Reset Vault so a
-    /// key rotation doesn't leave undecryptable orphans consuming the user's Vaultyx quota.
-    static func purgeAllRemote() async {
-        guard let token = sovereignToken() else { return }
-        guard let files = try? await listAllFiles(token: token) else { return }
+    /// Purge ALL of this vault's DocArmor backups and validate success. Returns a structured result.
+    /// Used by Reset Vault so a key rotation doesn't leave undecryptable orphans consuming the user's Vaultyx quota.
+    /// Non-2xx DELETE responses are treated as failures, not successes. If list fails, result.listSucceeded=false.
+    static func purgeAllRemote() async -> PurgeResult {
+        var result = PurgeResult()
+
+        guard let token = sovereignToken() else {
+            result.errorDescription = "No Sovereign subscription"
+            return result
+        }
+
+        let files: [TreeFile]
+        do {
+            files = try await listAllFiles(token: token)
+            result.listSucceeded = true
+        } catch {
+            // List failed — we cannot enumerate files to delete. Mark failure but return so
+            // local reset can still proceed (attempting remote purge is best-effort).
+            result.errorDescription = "Couldn't reach Vaultyx to list cloud backups"
+            return result
+        }
+
+        // Attempt to DELETE each file and validate HTTP status.
         for file in files {
             var req = URLRequest(url: baseURL.appendingPathComponent("/v1/vault/files/\(file.file_id)"))
             req.httpMethod = "DELETE"
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            _ = try? await URLSession.shared.data(for: req)
+
+            do {
+                let (_, response) = try await URLSession.shared.data(for: req)
+                guard let http = response as? HTTPURLResponse,
+                      http.statusCode == 200 || http.statusCode == 204 || http.statusCode == 404 else {
+                    // Treat non-2xx (except 404, which means already deleted) as failure.
+                    result.failedCount += 1
+                    continue
+                }
+                result.deletedCount += 1
+            } catch {
+                // Network or URLSession error.
+                result.failedCount += 1
+            }
         }
+
+        return result
     }
 
     // MARK: - Public API — Usage
