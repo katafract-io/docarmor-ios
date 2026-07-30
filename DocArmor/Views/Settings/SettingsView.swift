@@ -320,8 +320,8 @@ struct SettingsView: View {
 
                     statusRow(
                         title: "Network Activity",
-                        systemImage: "network.slash",
-                        value: "None by design"
+                        systemImage: sovereignBackupEnabled ? "network.fill" : "network.slash",
+                        value: sovereignBackupEnabled ? "Vaultyx cloud backup active" : "None (local-only mode)"
                     )
 
                     statusRow(
@@ -624,11 +624,19 @@ struct SettingsView: View {
                 // MARK: Privacy Statement
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
-                        Label("100% Local Storage", systemImage: "iphone")
-                            .font(.caption.bold())
-                        Text("Your documents never leave this device. DocArmor makes zero network connections and has no server infrastructure.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        if sovereignBackupEnabled {
+                            Label("End-to-End Encrypted Cloud Backup", systemImage: "icloud.and.arrow.up.fill")
+                                .font(.caption.bold())
+                            Text("Your full documents are encrypted on this device with your vault key (which never leaves your device) before uploading to Vaultyx. The server never sees plaintext.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Label("Local-Only Storage", systemImage: "iphone")
+                                .font(.caption.bold())
+                            Text("Your documents stay on this device and are never uploaded. DocArmor makes no network calls for document storage.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.vertical, 4)
 

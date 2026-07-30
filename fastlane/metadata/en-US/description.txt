@@ -26,7 +26,7 @@ Share a document with a trusted contact with redaction controls — front-only, 
 EMERGENCY CARD
 Opt in to a lock-screen emergency card with your blood type, allergies, and emergency contacts — visible to first responders without unlocking your vault.
 
-SOVEREIGN CLOUD BACKUP (optional)
-Katafract Sovereign subscribers can back up encrypted document metadata to their private Vaultyx vault. Image pages stay on-device. The server never sees your key.
+SOVEREIGN CLOUD BACKUP (optional, default-enabled for subscribers)
+Katafract Sovereign subscribers can back up their full encrypted documents to their private Vaultyx vault—metadata and all page images. Each backup is encrypted with your device's vault key before upload, so the server never sees plaintext. You can disable this anytime in Settings.
 
 DocArmor is built by Katafract LLC, a privacy-first software company. Your data belongs to you.

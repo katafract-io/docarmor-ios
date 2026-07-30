@@ -2,7 +2,7 @@
 
 DocArmor is a privacy-first iOS document vault for storing personal IDs, insurance cards, travel documents, and other sensitive records on-device.
 
-The app is built around a simple promise: your documents stay local, encrypted, and under your control. There is no backend, no account system, no analytics SDK, and no cloud sync requirement.
+The app is built around a core promise: your documents stay encrypted, and you control access. All encryption happens on-device with a key that never leaves your phone. Sovereign subscribers have the option to back up encrypted documents to Vaultyx (enabled by default, can be disabled anytime). There is no analytics SDK, no account required for local use, and no third-party tracking.
 
 ## What It Does
 
@@ -19,7 +19,8 @@ The app is built around a simple promise: your documents stay local, encrypted, 
 - Vault keys are stored in the Apple Keychain
 - SwiftData is configured for local-only storage
 - Backup/export flows are designed around encrypted archives, not plaintext vault dumps
-- The app does not make network calls as part of its document storage workflow
+- For Sovereign subscribers: encrypted documents are backed up to Vaultyx with end-to-end encryption (vault key never leaves device)
+- For local-only mode: no network calls are made for document storage
 
 This repository is the open-source codebase for DocArmor. Anyone can inspect, build, audit, and contribute to the project source.
 

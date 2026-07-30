@@ -16,8 +16,8 @@ struct OnboardingView: View {
     private let pages: [Page] = [
         Page(
             icon: "iphone.and.arrow.forward",
-            title: "Your Documents Stay Here",
-            body: "Everything in DocArmor is encrypted and stored only on this device. No cloud, no account, no server ever sees your documents.",
+            title: "Your Documents Stay Encrypted",
+            body: "Everything in DocArmor is encrypted on this device with a key that never leaves your phone. Sovereign subscribers can optionally back up encrypted documents to Vaultyx—the server never sees plaintext. You can disable this anytime in Settings.",
             color: .kataSapphire
         ),
         Page(
