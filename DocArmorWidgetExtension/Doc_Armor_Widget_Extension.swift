@@ -24,16 +24,34 @@ struct WidgetEmergencyCardData: Codable, Equatable {
     var contact2Phone: String = ""
 }
 
+/// Represents the state of widget data availability
+enum WidgetDataAvailability<T: Codable>: Equatable where T: Equatable {
+    /// Data successfully loaded from App Group
+    case available(T)
+    /// No data available (genuine empty/disabled state)
+    case empty
+    /// App Group access or decoding failed (provisioning issue)
+    case unavailable
+}
+
 enum WidgetEmergencyCardStore {
-    static func load() -> WidgetEmergencyCardData {
-        guard
-            let defaults = UserDefaults(suiteName: WidgetAppGroup.identifier),
-            let data = defaults.data(forKey: "emergencyCardData"),
-            let card = try? JSONDecoder().decode(WidgetEmergencyCardData.self, from: data)
-        else {
-            return WidgetEmergencyCardData()
+    static func load() -> WidgetDataAvailability<WidgetEmergencyCardData> {
+        guard let defaults = UserDefaults(suiteName: WidgetAppGroup.identifier) else {
+            // App Group access failed (entitlement/provisioning issue)
+            return .unavailable
         }
-        return card
+
+        guard let data = defaults.data(forKey: "emergencyCardData") else {
+            // No data stored yet (genuine empty state)
+            return .empty
+        }
+
+        guard let card = try? JSONDecoder().decode(WidgetEmergencyCardData.self, from: data) else {
+            // Data exists but is corrupted (provisioning or data corruption issue)
+            return .unavailable
+        }
+
+        return .available(card)
     }
 }
 
@@ -46,21 +64,23 @@ struct WidgetVaultReadinessSnapshot: Codable {
 }
 
 enum WidgetSnapshotStore {
-    static func load() -> WidgetVaultReadinessSnapshot {
-        guard
-            let defaults = UserDefaults(suiteName: WidgetAppGroup.identifier),
-            let data = defaults.data(forKey: "vaultReadinessSnapshot"),
-            let snapshot = try? JSONDecoder().decode(WidgetVaultReadinessSnapshot.self, from: data)
-        else {
-            return WidgetVaultReadinessSnapshot(
-                updatedAt: .now,
-                totalDocuments: 0,
-                needsAttentionCount: 0,
-                expiringSoonCount: 0,
-                readyNowCount: 0
-            )
+    static func load() -> WidgetDataAvailability<WidgetVaultReadinessSnapshot> {
+        guard let defaults = UserDefaults(suiteName: WidgetAppGroup.identifier) else {
+            // App Group access failed (entitlement/provisioning issue)
+            return .unavailable
         }
-        return snapshot
+
+        guard let data = defaults.data(forKey: "vaultReadinessSnapshot") else {
+            // No data stored yet (genuine empty state)
+            return .empty
+        }
+
+        guard let snapshot = try? JSONDecoder().decode(WidgetVaultReadinessSnapshot.self, from: data) else {
+            // Data exists but is corrupted (provisioning or data corruption issue)
+            return .unavailable
+        }
+
+        return .available(snapshot)
     }
 }
 
@@ -187,29 +207,45 @@ struct DocArmorQuickLaunchWidget: Widget {
 
 struct ReadinessEntry: TimelineEntry {
     let date: Date
-    let snapshot: WidgetVaultReadinessSnapshot
+    let snapshotAvailability: WidgetDataAvailability<WidgetVaultReadinessSnapshot>
+
+    var snapshot: WidgetVaultReadinessSnapshot {
+        switch snapshotAvailability {
+        case .available(let snapshot):
+            return snapshot
+        case .empty, .unavailable:
+            // Return empty snapshot for both cases; caller will distinguish via availability
+            return WidgetVaultReadinessSnapshot(
+                updatedAt: .now,
+                totalDocuments: 0,
+                needsAttentionCount: 0,
+                expiringSoonCount: 0,
+                readyNowCount: 0
+            )
+        }
+    }
 }
 
 struct ReadinessProvider: TimelineProvider {
     func placeholder(in context: Context) -> ReadinessEntry {
         ReadinessEntry(
             date: .now,
-            snapshot: WidgetVaultReadinessSnapshot(
+            snapshotAvailability: .available(WidgetVaultReadinessSnapshot(
                 updatedAt: .now,
                 totalDocuments: 6,
                 needsAttentionCount: 2,
                 expiringSoonCount: 1,
                 readyNowCount: 4
-            )
+            ))
         )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ReadinessEntry) -> Void) {
-        completion(ReadinessEntry(date: .now, snapshot: WidgetSnapshotStore.load()))
+        completion(ReadinessEntry(date: .now, snapshotAvailability: WidgetSnapshotStore.load()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ReadinessEntry>) -> Void) {
-        let entry = ReadinessEntry(date: .now, snapshot: WidgetSnapshotStore.load())
+        let entry = ReadinessEntry(date: .now, snapshotAvailability: WidgetSnapshotStore.load())
         completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(1800))))
     }
 }
@@ -219,28 +255,81 @@ struct DocArmorReadinessWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ReadinessProvider()) { entry in
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Vault Readiness", systemImage: "bolt.shield.fill")
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
-
-                HStack {
-                    readinessMetric(title: "Ready", value: "\(entry.snapshot.readyNowCount)")
-                    readinessMetric(title: "Soon", value: "\(entry.snapshot.expiringSoonCount)")
-                    readinessMetric(title: "Alert", value: "\(entry.snapshot.needsAttentionCount)")
-                }
-
-                Text("Total documents: \(entry.snapshot.totalDocuments)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .padding()
-            .containerBackground(Color(.systemGray6), for: .widget)
+            ReadinessWidgetView(entry: entry)
         }
         .configurationDisplayName("Vault Readiness")
         .description("Monitor document readiness and upcoming issues.")
         .supportedFamilies([.systemMedium])
+    }
+}
+
+private struct ReadinessWidgetView: View {
+    let entry: ReadinessEntry
+
+    var body: some View {
+        Group {
+            switch entry.snapshotAvailability {
+            case .available:
+                availableView
+            case .empty:
+                emptyView
+            case .unavailable:
+                unavailableView
+            }
+        }
+        .containerBackground(Color(.systemGray6), for: .widget)
+    }
+
+    private var availableView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Vault Readiness", systemImage: "bolt.shield.fill")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+
+            HStack {
+                readinessMetric(title: "Ready", value: "\(entry.snapshot.readyNowCount)")
+                readinessMetric(title: "Soon", value: "\(entry.snapshot.expiringSoonCount)")
+                readinessMetric(title: "Alert", value: "\(entry.snapshot.needsAttentionCount)")
+            }
+
+            Text("Total documents: \(entry.snapshot.totalDocuments)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding()
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "bolt.shield.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(.secondary)
+            Text("No vault data yet")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+            Text("Start adding documents to DocArmor")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    private var unavailableView: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(.orange)
+            Text("Setup incomplete")
+                .font(.caption.bold())
+                .foregroundStyle(.primary)
+            Text("Open DocArmor to complete widget setup")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 
     private func readinessMetric(title: String, value: String) -> some View {
@@ -258,20 +347,30 @@ struct DocArmorReadinessWidget: Widget {
 
 struct EmergencyCardEntry: TimelineEntry {
     let date: Date
-    let card: WidgetEmergencyCardData
+    let cardAvailability: WidgetDataAvailability<WidgetEmergencyCardData>
+
+    var card: WidgetEmergencyCardData {
+        switch cardAvailability {
+        case .available(let card):
+            return card
+        case .empty, .unavailable:
+            // Return empty card for both cases; caller will distinguish via availability
+            return WidgetEmergencyCardData()
+        }
+    }
 }
 
 struct EmergencyCardProvider: TimelineProvider {
     func placeholder(in context: Context) -> EmergencyCardEntry {
-        EmergencyCardEntry(date: .now, card: WidgetEmergencyCardData())
+        EmergencyCardEntry(date: .now, cardAvailability: .empty)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (EmergencyCardEntry) -> Void) {
-        completion(EmergencyCardEntry(date: .now, card: WidgetEmergencyCardStore.load()))
+        completion(EmergencyCardEntry(date: .now, cardAvailability: WidgetEmergencyCardStore.load()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<EmergencyCardEntry>) -> Void) {
-        let entry = EmergencyCardEntry(date: .now, card: WidgetEmergencyCardStore.load())
+        let entry = EmergencyCardEntry(date: .now, cardAvailability: WidgetEmergencyCardStore.load())
         completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(3600))))
     }
 }
@@ -296,15 +395,22 @@ private struct EmergencyCardWidgetView: View {
 
     var body: some View {
         Group {
-            if entry.card.isEnabled {
-                switch family {
-                case .accessoryRectangular:
-                    rectangularView
-                default:
-                    smallView
+            switch entry.cardAvailability {
+            case .available:
+                if entry.card.isEnabled {
+                    switch family {
+                    case .accessoryRectangular:
+                        rectangularView
+                    default:
+                        smallView
+                    }
+                } else {
+                    disabledView
                 }
-            } else {
-                disabledView
+            case .empty:
+                emptyView
+            case .unavailable:
+                unavailableView
             }
         }
         .containerBackground(Color(.systemGray6), for: .widget)
@@ -315,6 +421,30 @@ private struct EmergencyCardWidgetView: View {
             Image(systemName: "cross.case.fill")
                 .foregroundStyle(.red)
             Text("Set up Emergency Card in DocArmor")
+                .font(.caption2)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(10)
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "cross.case.fill")
+                .foregroundStyle(.secondary)
+            Text("Emergency Card not configured")
+                .font(.caption2)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(10)
+    }
+
+    private var unavailableView: some View {
+        VStack(spacing: 4) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text("Setup incomplete")
                 .font(.caption2)
                 .multilineTextAlignment(.center)
         }

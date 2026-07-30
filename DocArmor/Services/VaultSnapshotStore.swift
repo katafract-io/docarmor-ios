@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 nonisolated struct VaultReadinessSnapshot: Codable, Sendable {
     let updatedAt: Date
@@ -14,6 +15,7 @@ enum VaultSnapshotStore {
     nonisolated static func save(snapshot: VaultReadinessSnapshot) {
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         sharedDefaults().set(data, forKey: snapshotKey)
+        WidgetCenter.shared.reloadTimelines(ofKind: "DocArmorReadinessWidget")
     }
 
     nonisolated static func loadSnapshot() -> VaultReadinessSnapshot? {

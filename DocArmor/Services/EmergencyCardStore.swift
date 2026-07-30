@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 enum EmergencyCardStore {
     private static let key = "emergencyCardData"
@@ -20,5 +21,6 @@ enum EmergencyCardStore {
     static func save(_ card: EmergencyCardData) {
         guard let data = try? JSONEncoder().encode(card) else { return }
         defaults.set(data, forKey: key)
+        WidgetCenter.shared.reloadTimelines(ofKind: "DocArmorEmergencyCardWidget")
     }
 }
