@@ -95,7 +95,10 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          # No `secrets.ASC_KEY_CONTENT` — that secret has NEVER existed in this repo or
+          # org (the repo secret is ASC_PRIVATE_KEY). Referencing it silently yielded an
+          # empty value, which is what tripped the broken fallback below. Infisical
+          # `prod/apple` is the canonical source, rendered at runtime over the mesh.
           APP_ID: ${{ secrets.APP_ID }}
         run: |
           set -eo pipefail
@@ -111,16 +114,68 @@ jobs:
           # ASC_KEY_CONTENT (GH Actions secret, preferred — runner-agnostic)
           # or ASC_KEY_PATH (per-runner file, legacy).
           #
-          # Preferred: set ASC_KEY_CONTENT secret at the org level so any
-          # runner (existing or future) just works. Until that secret is
-          # configured, fall back to the per-runner .p8 at
-          # ~/runner-env/AuthKey_<KEY_ID>.p8.
+          # ::add-mask:: is LINE-oriented: masking a multi-line value (an ASC .p8 is a
+          # 6-line PEM) registers only line 1 and PRINTS THE REST VERBATIM, so the naive
+          # `echo "::add-mask::$KEY"` leaks the key. Mask line by line. The loop body must
+          # be `if/fi`, not `[ -n ... ] && ...` — with `&&` an empty value makes the
+          # pipeline exit 1 and `set -e` kills the step silently.
+          _mask() { printf '%s\n' "$1" | while IFS= read -r _l; do
+              if [ -n "$_l" ]; then printf '::add-mask::%s\n' "$_l"; fi
+            done; return 0; }
+
+          # Infisical is canonical but must not be a single point of failure: every
+          # failure here warns and leaves ASC_KEY_CONTENT empty so the on-disk key is
+          # used instead. Falling back is not a security downgrade — it is the same ASC
+          # credential from a different store.
+          ASC_KEY_CONTENT=""
+          if [ ! -f "$HOME/runner-env/infisical.env" ]; then
+            echo "::warning::no $HOME/runner-env/infisical.env — trying on-disk ASC key"
+          else
+            set -a; . "$HOME/runner-env/infisical.env"; set +a
+            _mask "$INFISICAL_CLIENT_SECRET"
+            _TOK=$(curl -sf -X POST "$INFISICAL_API_URL/api/v1/auth/universal-auth/login" \
+              -H 'Content-Type: application/json' \
+              -d "{\"clientId\":\"$INFISICAL_CLIENT_ID\",\"clientSecret\":\"$INFISICAL_CLIENT_SECRET\"}" \
+              | python3 -c 'import sys,json;print(json.load(sys.stdin)["accessToken"])') || _TOK=""
+            _mask "$_TOK"
+            if [ -z "$_TOK" ]; then
+              echo "::warning::Infisical auth failed — trying on-disk ASC key"
+            else
+              _sec() {
+                curl -sf "$INFISICAL_API_URL/api/v3/secrets/raw/$1?environment=prod&workspaceId=$INFISICAL_PROJECT_ID&secretPath=%2Fapple" \
+                  -H "Authorization: Bearer $_TOK" \
+                  | python3 -c 'import sys,json;print(json.load(sys.stdin)["secret"]["secretValue"])'
+              }
+              _k=$(_sec ASC_KEY_ID || echo ""); _i=$(_sec ASC_ISSUER_ID || echo "")
+              _p=$(_sec ASC_PRIVATE_KEY || echo "")
+              _mask "$_p"
+              if [ -n "$_k" ] && [ -n "$_i" ] && [ -n "$_p" ]; then
+                ASC_KEY_ID=$_k; ASC_ISSUER_ID=$_i; ASC_KEY_CONTENT=$_p
+                export ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_CONTENT
+                echo "ASC creds rendered from Infisical prod/apple (key id ${ASC_KEY_ID:0:4}…)"
+              else
+                echo "::warning::Infisical prod/apple returned an empty ASC value — trying on-disk ASC key"
+              fi
+            fi
+          fi
+
+          # Legacy on-disk fallback. Previously this globbed only ~/runner-env/ — the
+          # WRONG directory; the real key is at ~/private_keys/AuthKey_<id>.p8 — and it
+          # assigned the glob result UNCONDITIONALLY, destroying a valid ASC_KEY_PATH
+          # already set by the runner env. That is why live logs showed
+          # "using per-runner key: <none>" on runners that had a perfectly good key.
+          # Search both, and never overwrite a path that resolves to a real file.
           if [ -z "${ASC_KEY_CONTENT:-}" ]; then
-            ASC_KEY_PATH=$(ls $HOME/runner-env/AuthKey_*.p8 2>/dev/null | head -1 || echo "")
+            if [ ! -f "${ASC_KEY_PATH:-}" ]; then
+              for _d in "$HOME/private_keys" "$HOME/runner-env"; do
+                _found=$(ls "$_d"/AuthKey_*.p8 2>/dev/null | head -1 || echo "")
+                [ -n "$_found" ] && { ASC_KEY_PATH=$_found; break; }
+              done
+            fi
             export ASC_KEY_PATH
             echo "using per-runner key: ${ASC_KEY_PATH:-<none>}"
           else
-            echo "using ASC_KEY_CONTENT GH Actions secret"
+            echo "using ASC_KEY_CONTENT rendered from Infisical"
           fi
 
           # Extract the marketing-version train from pbxproj (all targets
