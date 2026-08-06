@@ -12,7 +12,18 @@
 
 ## Data In Transit
 
-**None.** DocArmor makes zero network calls. There is no server infrastructure, no analytics SDK, no crash reporter, and no third-party framework. This is verified by static analysis — the binary contains no `URLSession`, `URLRequest`, or network-adjacent framework calls in app code.
+**Encrypted cloud backup (Sovereign/Founder tier, optional, default-enabled):**
+- Requires active Sovereign or Founder subscription
+- Full encrypted documents (metadata + page images) uploaded to Vaultyx
+- Encryption: AES-256-GCM using the device-local vault key (Keychain, never exported)
+- Transport: TLS 1.3
+- Network paths: `/v1/vault/init`, `/v1/vault/presign`, `/v1/vault/manifest`, `/v1/vault/tree`, `/v1/vault/files/*`
+- The server never sees plaintext or the vault encryption key
+
+**Local-only mode (Haven or free DocArmor, or Sovereign users with backup disabled):**
+- No network calls for document storage
+- No analytics, crash reporting, or third-party tracking
+- Verified by code inspection — all storage operations use local SwiftData only
 
 ## Backup Security
 
