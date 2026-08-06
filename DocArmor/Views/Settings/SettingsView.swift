@@ -120,6 +120,7 @@ struct SettingsView: View {
     @State private var foundationModelStatus: FoundationModelAvailabilityService.Status = .unavailable(.frameworkUnavailable)
     @State private var vaultKeyExists: Bool = false
     @AppStorage("sovereignBackup.enabled") private var sovereignBackupEnabled = true
+    @AppStorage("docarmor.restoreIncomplete") private var restoreIncomplete = false
     @State private var hasLoadedInitialState = false
     // Cloud (Vaultyx) backup restore + usage
     @State private var showingCloudRestoreConfirm = false
@@ -159,6 +160,27 @@ struct SettingsView: View {
 
                 // MARK: Vault
                 Section("Vault") {
+                    if restoreIncomplete {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(
+                                "Backup Restore Interrupted",
+                                systemImage: "exclamationmark.triangle.fill"
+                            )
+                            .foregroundStyle(Color.kataChampagne.opacity(0.85))
+
+                            Text("A backup restore was interrupted. To prevent data loss, please try restoring the same backup file again.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Button("Retry Restore") {
+                                restoreIncomplete = false
+                                showingRestoreConfirm = true
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .padding(.vertical, 2)
+                    }
+
                     HStack {
                         Label("Documents", systemImage: "doc.fill")
                         Spacer()
@@ -888,6 +910,7 @@ struct SettingsView: View {
                 try BackupService.restoreBackup(from: data, passphrase: passphrase, into: modelContext)
                 householdProfiles = HouseholdStore.loadProfiles()
                 pendingImportURL = nil
+                restoreIncomplete = false
                 backupSuccessMessage = "Encrypted backup restored successfully."
             }
         } catch {

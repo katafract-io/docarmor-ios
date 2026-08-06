@@ -20,6 +20,9 @@ struct DocArmorApp: App {
     // Key loss detection: set when VaultKey is absent on launch but documents exist
     @AppStorage("docarmor.keyLostWithDocuments") private var keyLostWithDocuments = false
 
+    // Incomplete restore detection: set when a restore was interrupted mid-operation
+    @AppStorage("docarmor.restoreIncomplete") private var restoreIncomplete = false
+
     // Backup nag: shown once every 7 days when user has 3+ documents and never exported
     @AppStorage("docarmor.hasExportedBackup") private var hasExportedBackup = false
     @AppStorage("docarmor.backupNagShownDate") private var backupNagShownDate = 0.0
@@ -55,21 +58,32 @@ struct DocArmorApp: App {
         // to have a passcode. If it doesn't, generate() throws and we surface a
         // flag so the UI can explain the situation instead of failing silently later.
         if !VaultKey.exists {
-            // Check if user already has documents encrypted with the (now lost) key.
-            // This happens when the device passcode changes, revoking WhenPasscodeSetThisDeviceOnly keys.
-            let tempContext = ModelContext(modelContainer)
-            let docCount = (try? tempContext.fetchCount(FetchDescriptor<Document>())) ?? 0
-            if docCount > 0 {
-                // Key was revoked (passcode change) but encrypted documents exist.
-                // New key will be generated but old docs are permanently unreadable.
-                UserDefaults.standard.set(true, forKey: "docarmor.keyLostWithDocuments")
-            }
-            do {
-                try VaultKey.generate()
-            } catch {
-                // VaultKey.noPasscode is checked by LockScreenView to show
-                // an actionable "Set a device passcode to use DocArmor" message.
-                UserDefaults.standard.set(true, forKey: "vaultKeyProvisioningFailed")
+            // Check for an incomplete restore from a previous launch.
+            // If a restore was interrupted, we must NOT generate a fresh unrelated key —
+            // that would permanently orphan the restored documents (which are encrypted
+            // with the backup key that we were trying to install).
+            if let journal = RestoreStateManager.loadJournal() {
+                // Restore was interrupted. Mark this state so the UI can offer recovery.
+                UserDefaults.standard.set(true, forKey: "docarmor.restoreIncomplete")
+                // Clear the journal so we don't loop; the next action should be manual recovery.
+                RestoreStateManager.discardJournal()
+            } else {
+                // No incomplete restore. Check if user has documents but no key.
+                // This happens when the device passcode changes, revoking WhenPasscodeSetThisDeviceOnly keys.
+                let tempContext = ModelContext(modelContainer)
+                let docCount = (try? tempContext.fetchCount(FetchDescriptor<Document>())) ?? 0
+                if docCount > 0 {
+                    // Key was revoked (passcode change) but encrypted documents exist.
+                    // New key will be generated but old docs are permanently unreadable.
+                    UserDefaults.standard.set(true, forKey: "docarmor.keyLostWithDocuments")
+                }
+                do {
+                    try VaultKey.generate()
+                } catch {
+                    // VaultKey.noPasscode is checked by LockScreenView to show
+                    // an actionable "Set a device passcode to use DocArmor" message.
+                    UserDefaults.standard.set(true, forKey: "vaultKeyProvisioningFailed")
+                }
             }
         }
 

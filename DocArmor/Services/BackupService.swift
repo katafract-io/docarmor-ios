@@ -120,14 +120,31 @@ enum BackupService {
         // failure throws here, before a single existing record is touched.
         let payload = try decryptPayload(from: data, passphrase: passphrase)
 
-        ExpirationService.cancelAllReminders()
+        // Create a durable restore journal to track progress. If the app terminates
+        // at any point, relaunch can detect and recover.
+        var journal = RestoreStateManager.beginRestore()
+        RestoreStateManager.storePayload(payload)
 
-        // Atomic swap: delete existing and insert restored records in ONE unsaved
-        // transaction, then a single save(). If the save throws, roll back so the
-        // current vault is left fully intact — never a half-wiped vault (the old
-        // delete-then-save-then-insert order wiped everything on a mid-insert failure).
+        // PHASE 1: Install the backup's vault key BEFORE touching SwiftData.
+        // This is critical: if key installation fails, we abort here without
+        // changing the model. The pre-restore vault remains fully functional.
+        do {
+            RestoreStateManager.updateStage(.keyInstallation, journal: &journal)
+            try VaultKey.replace(with: payload.vaultKeyData)
+            HouseholdStore.saveMembers(payload.householdMembers)
+        } catch {
+            // Key installation failed; vault and data are untouched.
+            RestoreStateManager.discardJournal()
+            throw error
+        }
+
+        // PHASE 2: Replace SwiftData records (documents + pages).
+        // Snapshot existing reminders before starting; if this transaction fails,
+        // we'll keep them intact so users don't lose scheduled notifications.
         var insertedDocuments: [Document] = []
         do {
+            RestoreStateManager.updateStage(.modelReplacement, journal: &journal)
+
             let existingDocuments = try modelContext.fetch(FetchDescriptor<Document>())
             for document in existingDocuments {
                 modelContext.delete(document)
@@ -169,20 +186,31 @@ enum BackupService {
 
             try modelContext.save()
         } catch {
-            // Undo the pending delete+insert so the pre-restore vault survives intact.
+            // SwiftData save failed; roll back and preserve existing reminders.
             modelContext.rollback()
+            RestoreStateManager.discardJournal()
             throw error
         }
 
-        // Model data is now committed. Install the backup's vault key so the restored
-        // page ciphertext is decryptable. If this throws, documents are present but need
-        // the key — recoverable by retry, and still not a data-loss wipe.
-        try VaultKey.replace(with: payload.vaultKeyData)
-        HouseholdStore.saveMembers(payload.householdMembers)
+        // PHASE 3: Cancel old reminders and schedule new ones for restored documents.
+        // Only cancel AFTER the SwiftData transaction succeeds. If this phase fails,
+        // the documents and key are committed; users can recover by re-running the restore.
+        do {
+            RestoreStateManager.updateStage(.reminderScheduling, journal: &journal)
+            ExpirationService.cancelAllReminders()
 
-        for document in insertedDocuments {
-            ExpirationService.scheduleReminder(for: document)
+            for document in insertedDocuments {
+                ExpirationService.scheduleReminder(for: document)
+            }
+        } catch {
+            // Reminder scheduling failed (less critical). Documents + key are committed.
+            // The app can still display them; reminders will be missing but recoverable.
+            RestoreStateManager.discardJournal()
+            throw error
         }
+
+        // Restore complete
+        RestoreStateManager.completeRestore()
     }
 
     nonisolated static func defaultFilename() -> String {
@@ -302,9 +330,11 @@ enum BackupService {
             throw BackupError.invalidPassphrase
         }
 
-        var material = Data(SHA256.hash(data: passphraseData + salt))
+        var digest = SHA256.hash(data: passphraseData + salt)
+        var material = Data(digest)
         for _ in 0..<100_000 {
-            material = Data(SHA256.hash(data: material + passphraseData + salt))
+            digest = SHA256.hash(data: material + passphraseData + salt)
+            material = Data(digest)
         }
         return SymmetricKey(data: material)
     }
