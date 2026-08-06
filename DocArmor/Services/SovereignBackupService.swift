@@ -37,6 +37,8 @@ enum SovereignBackupService {
 
     /// Attempt to back up `document` (full content, including encrypted page images) to Vaultyx.
     /// Returns true iff all steps succeeded. Fire-and-forget from a detached Task.
+    /// The caller is responsible for verifying the document's plaintext hash hasn't changed
+    /// since the upload was initiated (by comparing current hash vs the hash stored before upload).
     @discardableResult
     static func backup(document: Document, vaultKey: SymmetricKey) async -> Bool {
         guard let token = sovereignToken() else { return false }

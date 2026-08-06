@@ -253,7 +253,12 @@ struct DocArmorApp: App {
         }
     }
 
-    /// Retry backup for all documents with lastBackedUpAt == nil (never backed up).
+    /// Retry backup for all documents with pending changes (isDirtyForBackup == true).
+    /// A document is considered dirty if its current content hash differs from lastBackupHash,
+    /// which covers both never-backed-up documents and edits to already-backed-up documents.
+    /// Only updates lastBackupHash + lastBackedUpAt when the plaintext hash matches between
+    /// pre-upload and post-upload checks, preventing newer edits (made while upload was in-flight)
+    /// from being incorrectly marked as backed up.
     /// Called on scene .active when user has Sovereign/Founder plan and backup is enabled.
     private nonisolated func retrySovereignBackups(modelContainer: ModelContainer) async {
         guard SovereignBackupService.sovereignToken() != nil else { return }
@@ -267,23 +272,40 @@ struct DocArmorApp: App {
         }
 
         let ctx = ModelContext(modelContainer)
-        let unsynced: [Document]
+        let allDocs: [Document]
         do {
-            unsynced = try ctx.fetch(FetchDescriptor<Document>(
-                predicate: #Predicate { $0.lastBackedUpAt == nil }
-            ))
+            allDocs = try ctx.fetch(FetchDescriptor<Document>())
         } catch {
             return
         }
 
-        for doc in unsynced {
-            let success = await SovereignBackupService.backup(document: doc, vaultKey: key)
-            if success {
-                await MainActor.run {
-                    doc.lastBackedUpAt = Date.now
-                    try? ctx.save()
+        // Filter to dirty documents (current hash ≠ lastBackupHash)
+        let dirtyDocs = allDocs.filter { $0.isDirtyForBackup }
+
+        for doc in dirtyDocs {
+            // Capture the plaintext hash BEFORE attempting upload, so we can verify the upload
+            // corresponds to this exact revision (not a newer edit made while upload was in flight)
+            let preUploadHash = doc.computeBackupHash()
+
+            let uploadSucceeded = await SovereignBackupService.backup(document: doc, vaultKey: key)
+
+            if uploadSucceeded {
+                // Upload completed. Re-fetch to check current state in case document was edited.
+                // Only mark as backed up if plaintext hash still matches.
+                let refetchedDoc: Document? = (try? ctx.fetch(FetchDescriptor<Document>(predicate: #Predicate { $0.id == doc.id })))?.first
+                if let refetched = refetchedDoc {
+                    let currentHash = refetched.computeBackupHash()
+                    if currentHash == preUploadHash {
+                        // Upload succeeded AND document hasn't changed since upload was initiated.
+                        // Safe to mark as backed up.
+                        refetched.lastBackupHash = preUploadHash
+                        refetched.lastBackedUpAt = Date.now
+                        try? ctx.save()
+                    }
+                    // If currentHash != preUploadHash, a newer edit intervened — document remains dirty.
                 }
             }
+            // If upload failed, document remains dirty and will be retried next time.
         }
     }
 }
