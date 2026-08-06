@@ -119,7 +119,11 @@ struct SettingsView: View {
     @State private var customPacks: [SavedCustomPack] = []
     @State private var foundationModelStatus: FoundationModelAvailabilityService.Status = .unavailable(.frameworkUnavailable)
     @State private var vaultKeyExists: Bool = false
-    @AppStorage("sovereignBackup.enabled") private var sovereignBackupEnabled = true
+    /// Cloud backup preference: explicitly managed via CloudBackupCapability.Preference.
+    /// Initialized to explicit choice when first seen, defaulting to true (opt-in).
+    /// This is the only place where "never decided" → true is acceptable because the user
+    /// is looking directly at the control and seeing the opt-in prompt.
+    @State private var sovereignBackupEnabled: Bool = false
     @State private var hasLoadedInitialState = false
     // Cloud (Vaultyx) backup restore + usage
     @State private var showingCloudRestoreConfirm = false
@@ -179,6 +183,10 @@ struct SettingsView: View {
                     Section("Cloud Backup (Sovereign)") {
                         Toggle(isOn: $sovereignBackupEnabled) {
                             Label("Back up documents to Vaultyx", systemImage: "icloud.and.arrow.up.fill")
+                        }
+                        .onChange(of: sovereignBackupEnabled) { oldValue, newValue in
+                            // Persist explicit user choice to the shared preference
+                            CloudBackupCapability.Preference.write(newValue)
                         }
                         Text("When enabled, your full documents — page images and all — are encrypted with your on-device vault key and backed up to your Vaultyx storage. The server never sees plaintext.")
                             .font(.caption)
@@ -767,6 +775,9 @@ struct SettingsView: View {
                 foundationModelStatus = model
 
                 if entitlementService.hasCloudBackup {
+                    // Load the explicit cloud backup preference.
+                    // If never set (nil), default to true (showing opt-in to user looking at the control).
+                    sovereignBackupEnabled = CloudBackupCapability.Preference.readExplicitChoice() ?? true
                     vaultUsage = await SovereignBackupService.fetchUsage()
                 }
             }
