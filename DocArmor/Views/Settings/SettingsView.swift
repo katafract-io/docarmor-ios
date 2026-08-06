@@ -16,6 +16,40 @@ struct SettingsView: View {
         var id: String { rawValue }
     }
 
+    /// Tracks the outcome of a Reset Vault operation, distinguishing local vs cloud results.
+    struct ResetResult {
+        var localOpsSucceeded: Bool
+        var cloudPurgeSucceeded: Bool
+        var cloudListFailed: Bool
+        var cloudDeleteFailedCount: Int
+        var errorDescription: String?
+
+        var hadIssues: Bool {
+            !localOpsSucceeded || !cloudPurgeSucceeded || cloudListFailed || cloudDeleteFailedCount > 0
+        }
+
+        var userMessage: String {
+            // Local deletion is the primary operation. If local failed, that's the critical issue.
+            if !localOpsSucceeded {
+                if let error = errorDescription {
+                    return "Reset failed: \(error)"
+                }
+                return "Reset failed: Couldn't delete local documents or encryption key."
+            }
+
+            // Local succeeded. Report cloud status.
+            if cloudListFailed {
+                return "Vault reset (local). Couldn't contact Vaultyx to purge cloud backups — they may still exist and consume quota. Try again when online, or manually delete from Vaultyx."
+            }
+
+            if cloudDeleteFailedCount > 0 {
+                return "Vault reset (local). \(cloudDeleteFailedCount) cloud backup(s) failed to delete — they may still exist and consume quota. Try again, or manually delete from Vaultyx."
+            }
+
+            return "Vault reset successfully. Local documents, encryption key, and Vaultyx cloud backups all deleted."
+        }
+    }
+
     enum SuggestedPackKind: String, CaseIterable, Identifiable {
         case travel
         case vehicle
@@ -86,6 +120,8 @@ struct SettingsView: View {
     @State private var showingResetAlert = false
     @State private var showingResetConfirm = false
     @State private var isResetting = false
+    @State private var resetResult: ResetResult?
+    @State private var showingResetResult = false
     @State private var householdProfiles: [HouseholdMemberProfile] = []
     @State private var newMemberName = ""
     @State private var newMemberRole: HouseholdRole = .adult
@@ -655,7 +691,7 @@ struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This will permanently delete ALL documents and the encryption key. Your data will be unrecoverable. This cannot be undone.")
+                Text("This will permanently delete ALL local documents, the encryption key, AND any Vaultyx cloud backups associated with this vault. Your data will be unrecoverable. This cannot be undone.")
             }
             .confirmationDialog("Are you absolutely sure?", isPresented: $showingResetConfirm, titleVisibility: .visible) {
                 Button("Delete Everything Forever", role: .destructive) {
@@ -663,7 +699,12 @@ struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("All \(allDocuments.count) document(s) will be permanently destroyed.")
+                Text("Deleting:\n• All \(allDocuments.count) local document(s)\n• Vault encryption key\n• Vaultyx cloud backups (if any)\n\nThis cannot be undone.")
+            }
+            .alert("Reset Vault Result", isPresented: $showingResetResult) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(resetResult?.userMessage ?? "Reset complete.")
             }
             .confirmationDialog("Restore Backup?", isPresented: $showingRestoreConfirm, titleVisibility: .visible) {
                 Button("Choose Backup File", role: .destructive) {
@@ -830,14 +871,15 @@ struct SettingsView: View {
 
     // MARK: - Reset Vault
 
+    @MainActor
     private func resetVault() async {
         isResetting = true
+        defer { isResetting = false }
+
         ExpirationService.cancelAllReminders()
 
-        // Purge remote Vaultyx backups BEFORE the key is destroyed. After VaultKey.delete()
-        // those chunks are undecryptable orphans that would otherwise consume the user's
-        // Vaultyx quota forever. Best-effort; the local reset proceeds regardless.
-        await SovereignBackupService.purgeAllRemote()
+        // First, attempt local operations. Only if these succeed do we proceed to cloud purge.
+        var localOpsSucceeded = true
 
         // Delete all SwiftData records
         for doc in allDocuments {
@@ -848,16 +890,67 @@ struct SettingsView: View {
         // and may not flush until the next auto-save window; if the app crashes
         // after VaultKey.delete() but before the context saves, stale encrypted
         // records remain — now undecryptable with the new key.
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            localOpsSucceeded = false
+            resetResult = ResetResult(
+                localOpsSucceeded: false,
+                cloudPurgeSucceeded: false,
+                cloudListFailed: false,
+                cloudDeleteFailedCount: 0,
+                errorDescription: "Failed to save after deleting documents: \(error.localizedDescription)"
+            )
+            showingResetResult = true
+            return
+        }
 
         // Delete vault encryption key — encrypted data is now unrecoverable garbage
-        try? VaultKey.delete()
+        do {
+            try VaultKey.delete()
+        } catch {
+            localOpsSucceeded = false
+            resetResult = ResetResult(
+                localOpsSucceeded: false,
+                cloudPurgeSucceeded: false,
+                cloudListFailed: false,
+                cloudDeleteFailedCount: 0,
+                errorDescription: "Failed to delete encryption key: \(error.localizedDescription)"
+            )
+            showingResetResult = true
+            return
+        }
 
         // Generate a fresh key for any future use
-        _ = try? VaultKey.generate()
+        do {
+            _ = try VaultKey.generate()
+        } catch {
+            localOpsSucceeded = false
+            resetResult = ResetResult(
+                localOpsSucceeded: false,
+                cloudPurgeSucceeded: false,
+                cloudListFailed: false,
+                cloudDeleteFailedCount: 0,
+                errorDescription: "Failed to generate new encryption key: \(error.localizedDescription)"
+            )
+            showingResetResult = true
+            return
+        }
+
+        // All local operations succeeded. Now purge remote Vaultyx backups.
+        // This is best-effort; failures are reported but don't block the reset.
+        let purgeResult = await SovereignBackupService.purgeAllRemote()
+
+        resetResult = ResetResult(
+            localOpsSucceeded: true,
+            cloudPurgeSucceeded: purgeResult.deletedCount > 0 || (purgeResult.listSucceeded && purgeResult.failedCount == 0),
+            cloudListFailed: !purgeResult.listSucceeded,
+            cloudDeleteFailedCount: purgeResult.failedCount,
+            errorDescription: purgeResult.errorDescription
+        )
+        showingResetResult = true
 
         auth.lock()
-        isResetting = false
     }
 
     @MainActor
